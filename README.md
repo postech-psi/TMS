@@ -1,1 +1,3 @@
-# TMS
+# Thrust Measurement System (TMS) 
+
+The Thrust Measurement System (TMS) is a deterministic, embedded data acquisition unit engineered for high-fidelity propulsion analysis during static fire testing. Built on the Arduino Nano platform, the firmware implements a real-time, interrupt-driven control architecture that synchronizes ignition triggering with high-speed sensor acquisition. It captures sensor data at 320 samples per second (SPS) via dual 16-bit ADS1115 ADC, ensuring precise transient characterization. The system features a robust finite state machine logic that manages automated file journaling, failsafe relay control, and isochronous timing, guaranteeing data integrity and operational safety throughout the critical 15-second test window.
