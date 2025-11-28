@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 import os
 
+# github 데이터 테스트
 data_dir = 'E:/'
 measured_value = []
 
