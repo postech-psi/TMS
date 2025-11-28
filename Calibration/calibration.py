@@ -5,7 +5,7 @@ import os
 
 data_dir = 'E:/'
 measured_value = []
-
+#joat_hohohoho(징글밸)
 for i in range(20):
     filename = f'test_{i}.txt'
     filepath = os.path.join(data_dir, filename)
