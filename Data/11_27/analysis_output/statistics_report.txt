@@ -1,0 +1,43 @@
+======================================================================
+TMS PROPULSION ANALYSIS REPORT
+======================================================================
+
+DATA SUMMARY
+----------------------------------------------------------------------
+Input file: Data/11_27/tms_data.txt
+Total samples: 4713
+Duration: 14.725 s
+Sampling rate: 320 sps
+
+BASELINE CORRECTION
+----------------------------------------------------------------------
+Baseline offset: 0.080597 N
+Baseline samples used: 100
+
+PERFORMANCE METRICS
+----------------------------------------------------------------------
+Peak thrust: 132.140402 N
+Peak time: 6.290625 s
+Total impulse: 353.580290 N·s
+Positive impulse: 355.022500 N·s
+Average thrust (all): 24.007423 N
+Average thrust (active): 30.062096 N
+Thrust duration: 14.637500 s
+
+TEMPORAL METRICS
+----------------------------------------------------------------------
+Rise time (to peak): 6.200000 s
+Fall time (from peak): 8.434375 s
+
+TRANSIENT ANALYSIS
+----------------------------------------------------------------------
+Max thrust rate: 4577.744220 N/s
+Avg power rate: 97.518676 N/s
+
+STATISTICAL SUMMARY
+----------------------------------------------------------------------
+Min thrust: -2.140095 N
+Max thrust: 132.140402 N
+Std deviation: 42.518745 N
+
+======================================================================
