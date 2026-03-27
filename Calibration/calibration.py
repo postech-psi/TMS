@@ -9,7 +9,7 @@ weights_file = '/Users/leetaeho/TMS/Data/11_27/weights.txt'  # 증분 질량 파
 measured_value = []
 
 for i in range(20):
-    filename = f'TEST_{i}.TXT'
+    filename = f'TMS_{2}.TXT'
     filepath = os.path.join(data_dir, filename)
 
     if not os.path.isfile(filepath):

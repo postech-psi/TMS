@@ -15,7 +15,7 @@ from typing import Dict, Tuple, Optional
 from scipy.ndimage import uniform_filter1d
 
 # ===== CONFIGURATION =====
-INPUT_FILE = "Data/TMS_10.txt"
+INPUT_FILE = "Data/TMS_2.txt"
 OUTPUT_DIR = "Data/analysis_output"
 
 # Sampling rate
@@ -167,7 +167,7 @@ def calculate_metrics(
     ignition_delay = ignition_time
     
     # Total impulse (integrate thrust over burn time)
-    total_impulse = np.trapz(thrust[ignition_idx:burnout_idx+1], dx=dt)
+    total_impulse = np.trapezoid(thrust[ignition_idx:burnout_idx+1], dx=dt)
     
     # Average thrust during burn
     avg_thrust = total_impulse / burn_time if burn_time > 0 else 0
