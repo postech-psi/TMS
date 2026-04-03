@@ -9,7 +9,7 @@ from scipy.signal import butter, filtfilt
 # ===== CONFIGURATION =====
 YEAR = "2026"
 DATE_FOLDER = "4_2"
-INPUT_FILENAME = "TMS_4_12.TXT"
+INPUT_FILENAME = "temp/dynamic1.TXT"
 DRIFT_FILENAME = "loadcell_drift.TXT"
 LOADCELL_LINE_START = 0
 BAROMETER_LINE_START = 1
@@ -24,7 +24,8 @@ FORCE_OFFSET = 0.0
 
 # Drift and signal filtering
 DRIFT_MODE = "exponential"  # "off", "horizontal", or "exponential"
-LOADCELL_LOWPASS_CUTOFF_HZ = 15.0
+INPUT_TIME_GAP_SECONDS = 0.0
+LOADCELL_LOWPASS_CUTOFF_HZ = 25.0
 LOADCELL_LOWPASS_ORDER = 2
 BAROMETER_LOWPASS_CUTOFF_HZ = 3.0
 BAROMETER_LOWPASS_ORDER = 2
@@ -144,7 +145,13 @@ def estimate_idle_force(raw_force: np.ndarray) -> dict[str, float]:
     }
 
 
-def build_drift_result(mode: str, time: np.ndarray, raw_force: np.ndarray, drift_force: Optional[np.ndarray]) -> dict[str, object]:
+def build_drift_result(
+    mode: str,
+    time: np.ndarray,
+    raw_force: np.ndarray,
+    drift_force: Optional[np.ndarray],
+    input_time_gap_s: float = 0.0,
+) -> dict[str, object]:
     """Apply the selected drift correction model and return correction metadata."""
     if mode == "off":
         modeled_drift = np.zeros_like(raw_force)
@@ -178,15 +185,20 @@ def build_drift_result(mode: str, time: np.ndarray, raw_force: np.ndarray, drift
             raise ValueError("Drift reference data is required for exponential drift correction mode.")
         drift_time = np.arange(drift_force.size) / SAMPLING_RATE
         fit_result = fit_exponential_drift(drift_time, drift_force)
-        modeled_drift = exponential_model(time, *np.asarray(fit_result["params"]))
+        effective_time = time + input_time_gap_s
+        modeled_drift = exponential_model(effective_time, *np.asarray(fit_result["params"]))
         return {
             "mode": mode,
             "label": "Exponential",
-            "description": format_drift_formula(np.asarray(fit_result["params"])),
+            "description": (
+                f"{format_drift_formula(np.asarray(fit_result['params']))}; "
+                f"startup-to-sampling offset {input_time_gap_s:.6f} s"
+            ),
             "modeled_drift": modeled_drift,
             "corrected_force": raw_force - modeled_drift,
             "r2": float(fit_result["r2"]),
             "params": np.asarray(fit_result["params"]),
+            "time_gap_s": input_time_gap_s,
         }
     raise ValueError(f"Unsupported DRIFT_MODE: {mode}. Use 'off', 'horizontal', or 'exponential'.")
 
@@ -432,7 +444,7 @@ def plot_loadcell_summary(
         alpha=0.12,
         color="blue",
     )
-    ax.set_title(f"Loadcell Summary - {INPUT_FILENAME}")
+    ax.set_title(f"Loadcell Graph - {INPUT_FILENAME}")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Force (N)")
     ax.set_xlim(0, plot_end_time)
@@ -492,7 +504,7 @@ def plot_barometer_summary(
         markersize=3.5,
         label="Peak pressure",
     )
-    ax.set_title(f"Barometer Summary - {INPUT_FILENAME}")
+    ax.set_title(f"Barometer Graph - {INPUT_FILENAME}")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel(PRESSURE_LABEL)
     ax.set_xlim(0, plot_end_time)
@@ -591,7 +603,7 @@ def main() -> None:
     drift_force = calibrated_force(drift_adc) if drift_adc.size else None
     raw_pressure = convert_to_pressure(barometer_raw)
 
-    drift_result = build_drift_result(DRIFT_MODE, time, raw_force, drift_force)
+    drift_result = build_drift_result(DRIFT_MODE, time, raw_force, drift_force, INPUT_TIME_GAP_SECONDS)
     modeled_drift = np.asarray(drift_result["modeled_drift"], dtype=float)
     corrected_force = np.asarray(drift_result["corrected_force"], dtype=float)
     filtered_force = zero_phase_lowpass(corrected_force, LOADCELL_LOWPASS_CUTOFF_HZ, LOADCELL_LOWPASS_ORDER)

@@ -1,0 +1,46 @@
+========================================================================
+STATIC FIRE REPORT
+========================================================================
+
+Input file: TMS\Data\2026\4_2\temp\dynamic1.TXT
+Drift reference: TMS\Data\2026\4_2\loadcell_drift.TXT
+Sampling rate: 320 sps
+
+------------------------------------------------------------------------
+LOADCELL / THRUST SUMMARY
+------------------------------------------------------------------------
+Ignition delay: 2531.2 ms
+Total impulse: 119.41 N s
+Peak thrust: 89.66 N
+Average thrust: 19.90 N
+3 percent threshold: 2.69 N
+Ignition time: 2531.2 ms
+Burn end: 8531.2 ms
+Burn time: 6000.0 ms
+Loadcell filter: Butterworth low-pass 25.0 Hz, order 2
+
+------------------------------------------------------------------------
+DRIFT MODEL
+------------------------------------------------------------------------
+Mode: Exponential
+Details: y = 14.083910 * exp(-0.003660 * t) + -9.463715; startup-to-sampling offset 0.000000 s
+Fit R^2: 0.975999
+
+------------------------------------------------------------------------
+BAROMETER / PRESSURE SUMMARY
+------------------------------------------------------------------------
+Pressure conversion: y = 0.0027x -0.11
+Gauge baseline removed: -0.157008
+Peak pressure: 0.038 at 6.362 s
+Pressure span: 0.056
+Pressure std: 0.009
+Pressure filter: Butterworth low-pass 3.0 Hz, order 2
+
+------------------------------------------------------------------------
+CALIBRATION TRACEABILITY
+------------------------------------------------------------------------
+Calibration slope: -0.039100 kg/ADC
+Calibration intercept: -193.0049 kg
+Calibration R^2: 0.999948
+
+========================================================================
