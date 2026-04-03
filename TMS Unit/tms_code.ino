@@ -6,6 +6,7 @@
 unsigned long lastMicros = 0;
 unsigned long now = 0;
 const unsigned long SAMPLING_INTERVAL = 3125; //  320sps 샘플링 간격 
+unsigned long power_on_time = 0;
 unsigned long sampling_start_time = 0;
 unsigned long current_interval = 0;
 
@@ -18,6 +19,7 @@ unsigned long current_interval = 0;
 
 bool relaytrigger=false;
 volatile bool ControlSignal=false;    
+volatile bool FireSignalDetected=false;
 
 char filename[20];
 
@@ -69,14 +71,14 @@ void setup() {
   // rising edge interrupt: 점화 신호가 들어오면 start_func 실행
   attachInterrupt(digitalPinToInterrupt(interrupt_pin), start_func, RISING);
 
+  power_on_time = micros();
+
   // sd 카드 처음 write 시 발생하는 문제 방지 위해서 한번 열었다가 닫아줌: github issue 참고
   myfile=SD.open(filename,FILE_WRITE);
   ads1_value =  ads1.getLastConversionResults();
   // Serial.println(ads1_value);
   ads2_value =  ads2.getLastConversionResults();
   // Serial.println(ads2_value);
-  now = micros();
-  myfile.println(now);
   myfile.println(ads1_value);
   myfile.println(ads2_value);
   Serial.println(filename);
@@ -85,7 +87,25 @@ void setup() {
 }
 
 void loop() { 
-  if(ControlSignal){  // 점화 신호 받는게 확인되면 loop 진입
+
+  // 점화 신호 감지되면 50번 샘플링해서 45번 이상 HIGH면 ControlSignal true로 바꿔줌 
+  if(FireSignalDetected && !ControlSignal){
+    FireSignalDetected=false;
+
+    int count=0;
+    for(int i=0;i<50;i++){
+      delay(10);
+      if(digitalRead(interrupt_pin)==HIGH){
+        count++;
+      }
+    }
+    if(count>45){
+      ControlSignal=true;
+    }
+  }
+
+   // 점화 신호 받은게 확인되면 relay 닫고 샘플링 시작 
+  if(ControlSignal){ 
     int fileNumber = 1;
     sprintf(filename, "tms_%d.txt", fileNumber);
     while(SD.exists(filename)){
@@ -106,6 +126,7 @@ void loop() {
 
     sampling_start_time = micros();
     myfile.println(sampling_start_time);
+    myfile.println(power_on_time);
     now = sampling_start_time + 1;
 
 
@@ -144,16 +165,7 @@ void loop() {
   }
 }
 
-// fire signal 받으면 50번 샘플링해서 45번 이상 HIGH면 ControlSignal true로 바꿔주는 함수
+// interrupt 로 점화 신호 감지되면 호출되는 함수 
 void start_func(){
-  int count=0;
-  for(int i=0;i<50;i++){
-    delay(10);
-    if(digitalRead(2)==HIGH){
-      count++;
-    }
-  }
-  if(count>45){
-    ControlSignal=true; 
-  }
+  FireSignalDetected=true;
 }
