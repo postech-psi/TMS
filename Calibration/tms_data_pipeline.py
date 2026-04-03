@@ -23,7 +23,8 @@ GRAVITATIONAL_CONSTANT = 9.80665
 FORCE_OFFSET = 0.0
 
 # Drift and signal filtering
-LOADCELL_LOWPASS_CUTOFF_HZ = 5.0
+DRIFT_MODE = "exponential"  # "off", "horizontal", or "exponential"
+LOADCELL_LOWPASS_CUTOFF_HZ = 15.0
 LOADCELL_LOWPASS_ORDER = 2
 BAROMETER_LOWPASS_CUTOFF_HZ = 3.0
 BAROMETER_LOWPASS_ORDER = 2
@@ -37,16 +38,18 @@ PRESSURE_LABEL = "Gauge Pressure"
 PROPELLANT_MASS = None
 THRUST_EVENT_THRESHOLD_RATIO = 0.03
 
+GENERATE_PLOTS = True
 SAVE_PLOT = True
 SAVE_REPORT = True
 SAVE_DATA = True
+OUTPUT_FOLDER_NAME = "analysis"
 # =========================
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = PROJECT_ROOT / "Data" / YEAR / DATE_FOLDER
 INPUT_FILE = DATA_DIR / INPUT_FILENAME
 DRIFT_FILE = DATA_DIR / DRIFT_FILENAME
-OUTPUT_DIR = DATA_DIR / "analysis_output"
+OUTPUT_DIR = DATA_DIR / OUTPUT_FOLDER_NAME
 REPORT_RULE = "=" * 72
 SECTION_RULE = "-" * 72
 
@@ -121,6 +124,71 @@ def fit_exponential_drift(time: np.ndarray, force: np.ndarray) -> dict[str, obje
         "y_fit": fitted,
         "r2": r_squared(force, fitted),
     }
+
+
+def estimate_idle_force(raw_force: np.ndarray) -> dict[str, float]:
+    """Estimate the idle-state mean from the pre-ignition portion of the test data."""
+    filtered_raw_force = zero_phase_lowpass(raw_force, LOADCELL_LOWPASS_CUTOFF_HZ, LOADCELL_LOWPASS_ORDER)
+    seed_count = max(5, min(filtered_raw_force.size, int(0.5 * SAMPLING_RATE)))
+    baseline_seed = float(np.mean(filtered_raw_force[:seed_count]))
+    peak_force = float(np.max(filtered_raw_force))
+    trigger_force = baseline_seed + THRUST_EVENT_THRESHOLD_RATIO * (peak_force - baseline_seed)
+    ignition_candidates = np.where(filtered_raw_force >= trigger_force)[0]
+    ignition_idx = int(ignition_candidates[0]) if ignition_candidates.size else filtered_raw_force.size
+    idle_end_idx = max(seed_count, ignition_idx)
+    idle_mean = float(np.mean(filtered_raw_force[:idle_end_idx]))
+    return {
+        "idle_mean": idle_mean,
+        "idle_end_idx": float(idle_end_idx),
+        "trigger_force": trigger_force,
+    }
+
+
+def build_drift_result(mode: str, time: np.ndarray, raw_force: np.ndarray, drift_force: Optional[np.ndarray]) -> dict[str, object]:
+    """Apply the selected drift correction model and return correction metadata."""
+    if mode == "off":
+        modeled_drift = np.zeros_like(raw_force)
+        return {
+            "mode": mode,
+            "label": "Off",
+            "description": "No drift correction applied.",
+            "modeled_drift": modeled_drift,
+            "corrected_force": raw_force.copy(),
+            "r2": None,
+            "params": None,
+        }
+    if mode == "horizontal":
+        idle_result = estimate_idle_force(raw_force)
+        idle_force = idle_result["idle_mean"]
+        modeled_drift = np.full_like(raw_force, idle_force, dtype=float)
+        return {
+            "mode": mode,
+            "label": "Horizontal offset",
+            "description": (
+                f"Constant idle-state offset from test data mean before ignition: {idle_force:.6f} N "
+                f"(first {int(idle_result['idle_end_idx'])} samples)"
+            ),
+            "modeled_drift": modeled_drift,
+            "corrected_force": raw_force - modeled_drift,
+            "r2": None,
+            "params": None,
+        }
+    if mode == "exponential":
+        if drift_force is None or drift_force.size == 0:
+            raise ValueError("Drift reference data is required for exponential drift correction mode.")
+        drift_time = np.arange(drift_force.size) / SAMPLING_RATE
+        fit_result = fit_exponential_drift(drift_time, drift_force)
+        modeled_drift = exponential_model(time, *np.asarray(fit_result["params"]))
+        return {
+            "mode": mode,
+            "label": "Exponential",
+            "description": format_drift_formula(np.asarray(fit_result["params"])),
+            "modeled_drift": modeled_drift,
+            "corrected_force": raw_force - modeled_drift,
+            "r2": float(fit_result["r2"]),
+            "params": np.asarray(fit_result["params"]),
+        }
+    raise ValueError(f"Unsupported DRIFT_MODE: {mode}. Use 'off', 'horizontal', or 'exponential'.")
 
 
 def r_squared(y_true: np.ndarray, y_pred: np.ndarray) -> float:
@@ -220,7 +288,6 @@ def append_report_content(
     pressure_baseline: float,
 ) -> None:
     """Write the executive report content into an already-open text file."""
-    drift_params = np.asarray(drift_result["params"], dtype=float)
     threshold_percent = int(THRUST_EVENT_THRESHOLD_RATIO * 100)
 
     file.write(f"{REPORT_RULE}\n")
@@ -231,14 +298,14 @@ def append_report_content(
     file.write(f"Sampling rate: {SAMPLING_RATE} sps\n\n")
 
     thrust_lines = [
-        f"Peak thrust: {thrust_metrics['peak_thrust']:.2f} N",
+        f"Ignition delay: {thrust_metrics['ignition_delay'] * 1000:.1f} ms",
         f"Total impulse: {thrust_metrics['total_impulse']:.2f} N s",
+        f"Peak thrust: {thrust_metrics['peak_thrust']:.2f} N",
         f"Average thrust: {thrust_metrics['avg_thrust']:.2f} N",
         f"{threshold_percent} percent threshold: {thrust_metrics['threshold_force']:.2f} N",
         f"Ignition time: {thrust_metrics['ignition_time'] * 1000:.1f} ms",
         f"Burn end: {thrust_metrics['burnout_time'] * 1000:.1f} ms",
         f"Burn time: {thrust_metrics['burn_time'] * 1000:.1f} ms",
-        f"Ignition delay: {thrust_metrics['ignition_delay'] * 1000:.1f} ms",
         f"Loadcell filter: Butterworth low-pass {LOADCELL_LOWPASS_CUTOFF_HZ:.1f} Hz, order {LOADCELL_LOWPASS_ORDER}",
     ]
     if thrust_metrics["specific_impulse"] is not None:
@@ -249,8 +316,9 @@ def append_report_content(
         file,
         "DRIFT MODEL",
         [
-            f"Model: {format_drift_formula(drift_params)}",
-            f"Fit R^2: {drift_result['r2']:.6f}",
+            f"Mode: {drift_result['label']}",
+            f"Details: {drift_result['description']}",
+            *([f"Fit R^2: {drift_result['r2']:.6f}"] if drift_result["r2"] is not None else []),
         ],
     )
 
@@ -292,40 +360,53 @@ def build_console_summary_lines(
         f"Ignition delay: {thrust_metrics['ignition_delay'] * 1000:.1f} ms",
         f"Burn time: {thrust_metrics['burn_time'] * 1000:.1f} ms",
         f"Peak pressure: {pressure_metrics['peak_pressure']:.3f}",
-        f"Drift model: {format_drift_formula(np.asarray(drift_result['params']))}",
+        f"Drift mode: {drift_result['label']}",
     ]
 
 
-def plot_executive_summary(
+def print_terminal_summary(
+    thrust_metrics: Dict[str, object],
+    pressure_metrics: Dict[str, float],
+    drift_result: dict[str, object],
+    loadcell_samples: int,
+    barometer_samples: int,
+    drift_samples: int,
+) -> None:
+    """Print only the essential run information to the terminal."""
+    print("Run complete")
+    print(f"Samples used: loadcell={loadcell_samples}, barometer={barometer_samples}, drift={drift_samples}")
+    for line in build_console_summary_lines(thrust_metrics, pressure_metrics, drift_result):
+        print(line)
+    print(f"Output folder: {format_project_relative_path(OUTPUT_DIR)}")
+
+
+def plot_loadcell_summary(
     time: np.ndarray,
     raw_force: np.ndarray,
     corrected_force: np.ndarray,
     filtered_force: np.ndarray,
     thrust_metrics: Dict[str, object],
-    raw_gauge_pressure: np.ndarray,
-    filtered_gauge_pressure: np.ndarray,
-    pressure_metrics: Dict[str, float],
 ) -> None:
-    """Create an executive figure with thrust and pressure panels."""
-    fig, axes = plt.subplots(2, 1, figsize=(13, 9), sharex=True, gridspec_kw={"height_ratios": [3, 2]})
+    """Create a dedicated loadcell/thrust figure."""
+    fig, ax = plt.subplots(figsize=(13, 6.5))
     plot_end_time = min(time[-1], thrust_metrics["burnout_time"] + max(0.2, 0.25 * thrust_metrics["burn_time"]))
 
-    axes[0].plot(time, raw_force, color="#9A9A9A", linewidth=0.8, alpha=0.85, label="Raw calibrated force")
-    axes[0].plot(time, corrected_force, color="#E07A2D", linewidth=0.9, alpha=0.8, label="Drift-corrected force")
-    axes[0].plot(
+    ax.plot(time, raw_force, color="#9A9A9A", linewidth=0.8, alpha=0.85, label="Raw calibrated force")
+    ax.plot(time, corrected_force, color="#E07A2D", linewidth=0.9, alpha=0.8, label="Drift-corrected force")
+    ax.plot(
         time,
         filtered_force,
         color="#1F5BD8",
         linewidth=2.0,
         label="Filtered thrust",
     )
-    axes[0].axhline(0, color="black", linewidth=0.6, alpha=0.4)
+    ax.axhline(0, color="black", linewidth=0.6, alpha=0.4)
 
     threshold_force = thrust_metrics["threshold_force"]
-    axes[0].axvspan(0, thrust_metrics["ignition_time"], color="#F9EDEE", alpha=0.9, lw=0)
-    axes[0].axvspan(thrust_metrics["ignition_time"], thrust_metrics["burnout_time"], color="#EDF7F0", alpha=0.95, lw=0)
-    axes[0].axvspan(thrust_metrics["burnout_time"], time[-1], color="#F1F2FB", alpha=0.95, lw=0)
-    axes[0].axhline(
+    ax.axvspan(0, thrust_metrics["ignition_time"], color="#F9EDEE", alpha=0.9, lw=0)
+    ax.axvspan(thrust_metrics["ignition_time"], thrust_metrics["burnout_time"], color="#EDF7F0", alpha=0.95, lw=0)
+    ax.axvspan(thrust_metrics["burnout_time"], time[-1], color="#F1F2FB", alpha=0.95, lw=0)
+    ax.axhline(
         threshold_force,
         color="#A0A0A0",
         linestyle="--",
@@ -333,9 +414,9 @@ def plot_executive_summary(
         alpha=0.9,
         label=f"{int(THRUST_EVENT_THRESHOLD_RATIO * 100)}% threshold",
     )
-    axes[0].axvline(thrust_metrics["ignition_time"], color="#6CA77B", linestyle=":", linewidth=1.0, alpha=0.95)
-    axes[0].axvline(thrust_metrics["burnout_time"], color="#D08A7B", linestyle=":", linewidth=1.0, alpha=0.95)
-    axes[0].plot(
+    ax.axvline(thrust_metrics["ignition_time"], color="#6CA77B", linestyle=":", linewidth=1.0, alpha=0.95)
+    ax.axvline(thrust_metrics["burnout_time"], color="#D08A7B", linestyle=":", linewidth=1.0, alpha=0.95)
+    ax.plot(
         thrust_metrics["peak_time"],
         thrust_metrics["peak_thrust"],
         marker="o",
@@ -344,18 +425,19 @@ def plot_executive_summary(
         markersize=3.5,
         label="Peak thrust",
     )
-    axes[0].fill_between(
+    ax.fill_between(
         time[thrust_metrics["ignition_idx"]:thrust_metrics["burnout_idx"] + 1],
         filtered_force[thrust_metrics["ignition_idx"]:thrust_metrics["burnout_idx"] + 1],
         0,
         alpha=0.12,
         color="blue",
     )
-    axes[0].set_title(f"Executive Static Fire Summary - {INPUT_FILENAME}")
-    axes[0].set_ylabel("Force (N)")
-    axes[0].set_xlim(0, plot_end_time)
-    axes[0].grid(True, alpha=0.3)
-    axes[0].legend(loc="upper left", fontsize=8, ncol=2, framealpha=0.92)
+    ax.set_title(f"Loadcell Summary - {INPUT_FILENAME}")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Force (N)")
+    ax.set_xlim(0, plot_end_time)
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc="upper left", fontsize=8, ncol=2, framealpha=0.92)
 
     thrust_text = (
         f"Peak thrust: {thrust_metrics['peak_thrust']:.2f} N\n"
@@ -363,46 +445,11 @@ def plot_executive_summary(
         f"Ignition duration: {thrust_metrics['burn_time'] * 1000:.1f} ms\n"
         f"Ignition delay: {thrust_metrics['ignition_delay'] * 1000:.1f} ms"
     )
-    axes[0].text(
+    ax.text(
         0.98,
         0.03,
         thrust_text,
-        transform=axes[0].transAxes,
-        ha="right",
-        va="bottom",
-        fontsize=9,
-        bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray", alpha=0.95),
-    )
-
-    axes[1].plot(time, raw_gauge_pressure, color="#5BA8A0", linewidth=0.8, alpha=0.6, label="Raw gauge pressure")
-    axes[1].plot(
-        time,
-        filtered_gauge_pressure,
-        color="#244EAD",
-        linewidth=1.8,
-        label="Filtered gauge pressure",
-    )
-    axes[1].axhline(0, color="black", linewidth=0.6, alpha=0.4)
-    axes[1].plot(
-        pressure_metrics["peak_pressure_time"],
-        pressure_metrics["peak_pressure"],
-        "o",
-        color="#237A45",
-        markersize=3.5,
-        label="Peak pressure",
-    )
-    axes[1].set_xlabel("Time (s)")
-    axes[1].set_ylabel(PRESSURE_LABEL)
-    axes[1].set_xlim(0, plot_end_time)
-    axes[1].grid(True, alpha=0.3)
-    axes[1].legend(loc="upper left", fontsize=8, ncol=2, framealpha=0.92)
-
-    pressure_text = f"Peak pressure: {pressure_metrics['peak_pressure']:.3f}"
-    axes[1].text(
-        0.98,
-        0.03,
-        pressure_text,
-        transform=axes[1].transAxes,
+        transform=ax.transAxes,
         ha="right",
         va="bottom",
         fontsize=9,
@@ -413,18 +460,89 @@ def plot_executive_summary(
 
     if SAVE_PLOT:
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        plot_path = OUTPUT_DIR / f"{Path(INPUT_FILENAME).stem}_executive_summary.png"
+        plot_path = OUTPUT_DIR / f"{Path(INPUT_FILENAME).stem}_loadcell_summary.png"
         plt.savefig(plot_path, dpi=300, bbox_inches="tight", facecolor="white")
-        print(f"Executive plot saved -> {plot_path}")
-
-    plt.show()
 
 
-def save_combined_output(
+def plot_barometer_summary(
+    time: np.ndarray,
+    raw_gauge_pressure: np.ndarray,
+    filtered_gauge_pressure: np.ndarray,
+    thrust_metrics: Dict[str, object],
+    pressure_metrics: Dict[str, float],
+) -> None:
+    """Create a dedicated barometer/pressure figure."""
+    fig, ax = plt.subplots(figsize=(13, 5.5))
+    plot_end_time = min(time[-1], thrust_metrics["burnout_time"] + max(0.2, 0.25 * thrust_metrics["burn_time"]))
+
+    ax.plot(time, raw_gauge_pressure, color="#5BA8A0", linewidth=0.8, alpha=0.6, label="Raw gauge pressure")
+    ax.plot(
+        time,
+        filtered_gauge_pressure,
+        color="#244EAD",
+        linewidth=1.8,
+        label="Filtered gauge pressure",
+    )
+    ax.axhline(0, color="black", linewidth=0.6, alpha=0.4)
+    ax.plot(
+        pressure_metrics["peak_pressure_time"],
+        pressure_metrics["peak_pressure"],
+        "o",
+        color="#237A45",
+        markersize=3.5,
+        label="Peak pressure",
+    )
+    ax.set_title(f"Barometer Summary - {INPUT_FILENAME}")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel(PRESSURE_LABEL)
+    ax.set_xlim(0, plot_end_time)
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc="upper left", fontsize=8, ncol=2, framealpha=0.92)
+
+    pressure_text = f"Peak pressure: {pressure_metrics['peak_pressure']:.3f}"
+    ax.text(
+        0.98,
+        0.03,
+        pressure_text,
+        transform=ax.transAxes,
+        ha="right",
+        va="bottom",
+        fontsize=9,
+        bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray", alpha=0.95),
+    )
+
+    plt.tight_layout()
+
+    if SAVE_PLOT:
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        plot_path = OUTPUT_DIR / f"{Path(INPUT_FILENAME).stem}_barometer_summary.png"
+        plt.savefig(plot_path, dpi=300, bbox_inches="tight", facecolor="white")
+
+
+def save_report(
     thrust_metrics: Dict[str, object],
     pressure_metrics: Dict[str, float],
     drift_result: dict[str, object],
     pressure_baseline: float,
+) -> None:
+    """Save the text report as its own file."""
+    if not SAVE_REPORT:
+        return
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    report_path = OUTPUT_DIR / f"{Path(INPUT_FILENAME).stem}_executive_report.txt"
+
+    with report_path.open("w", encoding="utf-8") as file:
+        append_report_content(
+            file,
+            thrust_metrics,
+            pressure_metrics,
+            drift_result,
+            pressure_baseline,
+        )
+
+
+def save_pipeline_data(
     time: np.ndarray,
     raw_force: np.ndarray,
     modeled_drift: np.ndarray,
@@ -433,96 +551,65 @@ def save_combined_output(
     raw_gauge_pressure: np.ndarray,
     filtered_gauge_pressure: np.ndarray,
 ) -> None:
-    """Save report text and processed pipeline data into one combined output file."""
-    if not SAVE_REPORT and not SAVE_DATA:
+    """Save the processed pipeline data as its own file."""
+    if not SAVE_DATA:
         return
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    output_path = OUTPUT_DIR / f"{Path(INPUT_FILENAME).stem}_executive_output.txt"
-
-    with output_path.open("w", encoding="utf-8") as file:
-        if SAVE_REPORT:
-            append_report_content(
-                file,
-                thrust_metrics,
-                pressure_metrics,
-                drift_result,
-                pressure_baseline,
+    data_path = OUTPUT_DIR / f"{Path(INPUT_FILENAME).stem}_pipeline_data.txt"
+    np.savetxt(
+        data_path,
+        np.column_stack(
+            (
+                time,
+                raw_force,
+                modeled_drift,
+                corrected_force,
+                filtered_force,
+                raw_gauge_pressure,
+                filtered_gauge_pressure,
             )
-            if SAVE_DATA:
-                file.write("\n")
-
-        if SAVE_DATA:
-            file.write(f"{REPORT_RULE}\n")
-            file.write("PIPELINE DATA\n")
-            file.write(f"{REPORT_RULE}\n")
-            np.savetxt(
-                file,
-                np.column_stack(
-                    (
-                        time,
-                        raw_force,
-                        modeled_drift,
-                        corrected_force,
-                        filtered_force,
-                        raw_gauge_pressure,
-                        filtered_gauge_pressure,
-                    )
-                ),
-                delimiter="\t",
-                header=(
-                    "time_s\traw_force_N\tdrift_model_N\tcorrected_force_N\tfiltered_force_N\t"
-                    "raw_gauge_pressure\tfiltered_gauge_pressure"
-                ),
-                comments="",
-                fmt="%.6f",
-            )
-
-    print(f"Combined executive output saved -> {output_path}")
+        ),
+        delimiter="\t",
+        header=(
+            "time_s\traw_force_N\tdrift_model_N\tcorrected_force_N\tfiltered_force_N\t"
+            "raw_gauge_pressure\tfiltered_gauge_pressure"
+        ),
+        comments="",
+        fmt="%.6f",
+    )
 
 
 def main() -> None:
-    print("Loading TMS channels...")
     loadcell_adc = load_interleaved_channel(INPUT_FILE, LOADCELL_LINE_START)
     barometer_raw = load_interleaved_channel(INPUT_FILE, BAROMETER_LINE_START)
-    drift_adc = load_single_channel_values(DRIFT_FILE)
+    drift_adc = load_single_channel_values(DRIFT_FILE) if DRIFT_MODE == "exponential" else np.array([], dtype=float)
 
     time = np.arange(loadcell_adc.size) / SAMPLING_RATE
-    drift_time = np.arange(drift_adc.size) / SAMPLING_RATE
 
-    print(f"Loaded {loadcell_adc.size} loadcell samples")
-    print(f"Loaded {barometer_raw.size} barometer samples")
-    print(f"Loaded {drift_adc.size} drift-reference samples")
-
-    print("Calibrating channels...")
     raw_force = calibrated_force(loadcell_adc)
-    drift_force = calibrated_force(drift_adc)
+    drift_force = calibrated_force(drift_adc) if drift_adc.size else None
     raw_pressure = convert_to_pressure(barometer_raw)
 
-    print("Fitting drift model and applying corrections...")
-    drift_result = fit_exponential_drift(drift_time, drift_force)
-    modeled_drift = exponential_model(time, *np.asarray(drift_result["params"]))
-    corrected_force = raw_force - modeled_drift
+    drift_result = build_drift_result(DRIFT_MODE, time, raw_force, drift_force)
+    modeled_drift = np.asarray(drift_result["modeled_drift"], dtype=float)
+    corrected_force = np.asarray(drift_result["corrected_force"], dtype=float)
     filtered_force = zero_phase_lowpass(corrected_force, LOADCELL_LOWPASS_CUTOFF_HZ, LOADCELL_LOWPASS_ORDER)
     filtered_pressure = zero_phase_lowpass(raw_pressure, BAROMETER_LOWPASS_CUTOFF_HZ, BAROMETER_LOWPASS_ORDER)
     pressure_baseline = float(np.mean(filtered_pressure))
     raw_gauge_pressure = raw_pressure - pressure_baseline
     filtered_gauge_pressure = filtered_pressure - pressure_baseline
 
-    print("Calculating executive metrics...")
     thrust_metrics = calculate_thrust_metrics(time, filtered_force, PROPELLANT_MASS)
     pressure_metrics = calculate_pressure_metrics(time, filtered_gauge_pressure)
 
-    print("\nExecutive summary")
-    print("-" * 60)
-    for line in build_console_summary_lines(thrust_metrics, pressure_metrics, drift_result):
-        print(line)
-
-    save_combined_output(
+    save_report(
         thrust_metrics,
         pressure_metrics,
         drift_result,
         pressure_baseline,
+    )
+    save_pipeline_data(
         time,
         raw_force,
         modeled_drift,
@@ -532,19 +619,30 @@ def main() -> None:
         filtered_gauge_pressure,
     )
 
-    print("Generating executive figure...")
-    plot_executive_summary(
-        time,
-        raw_force,
-        corrected_force,
-        filtered_force,
+    if GENERATE_PLOTS:
+        plot_loadcell_summary(
+            time,
+            raw_force,
+            corrected_force,
+            filtered_force,
+            thrust_metrics,
+        )
+        plot_barometer_summary(
+            time,
+            raw_gauge_pressure,
+            filtered_gauge_pressure,
+            thrust_metrics,
+            pressure_metrics,
+        )
+        plt.show()
+    print_terminal_summary(
         thrust_metrics,
-        raw_gauge_pressure,
-        filtered_gauge_pressure,
         pressure_metrics,
+        drift_result,
+        loadcell_adc.size,
+        barometer_raw.size,
+        drift_adc.size,
     )
-
-    print("Pipeline complete.")
 
 
 if __name__ == "__main__":

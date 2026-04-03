@@ -75,11 +75,13 @@ void setup() {
   // Serial.println(ads1_value);
   ads2_value =  ads2.getLastConversionResults();
   // Serial.println(ads2_value);
+  now = micros();
+  myfile.println(now);
   myfile.println(ads1_value);
   myfile.println(ads2_value);
   Serial.println(filename);
   myfile.close();
-  // Serial.println("Setup FInished");
+  // Serial.println("Setup Finished");
 }
 
 void loop() { 
@@ -103,6 +105,7 @@ void loop() {
     }
 
     sampling_start_time = micros();
+    myfile.println(sampling_start_time);
     now = sampling_start_time + 1;
 
 
