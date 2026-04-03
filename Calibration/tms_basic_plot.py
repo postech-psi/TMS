@@ -7,9 +7,11 @@ from scipy.signal import butter, filtfilt
 # ===== CONFIGURATION =====
 YEAR = "2026"
 DATE_FOLDER = "4_2"
-INPUT_FILENAME = "dynamic1.TXT"
+INPUT_FILENAME = "/temp/dynamic.TXT"
 SAMPLING_RATE = 320
-LINE_MODE = "odd"  # "full", "odd", or "even"
+# !!로드셀 켈리브레이션 코드의 경우 full 로 설정!!
+LINE_MODE = "full"  # "full", "odd", or "even" 
+SKIP_INITIAL_LINES = 2
 
 # Load cell calibration
 CALIBRATION_SLOPE = -0.0391
@@ -18,13 +20,13 @@ GRAVITATIONAL_CONSTANT = 9.80665
 FORCE_OFFSET = 0.0
 
 # Filtering
-LOADCELL_LOWPASS_CUTOFF_HZ = 15.0
+LOADCELL_LOWPASS_CUTOFF_HZ = 5
 LOADCELL_LOWPASS_ORDER = 2
 # =========================
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = PROJECT_ROOT / "Data" / YEAR / DATE_FOLDER 
-INPUT_FILE = DATA_DIR / "temp" / INPUT_FILENAME
+INPUT_FILE = DATA_DIR / INPUT_FILENAME
 
 
 def calibrated_force(adc_value: float | np.ndarray) -> float | np.ndarray:
@@ -54,17 +56,19 @@ def load_single_channel_values(file_path: str | Path, line_mode: str = "full") -
     with file_path.open("r", encoding="utf-8") as file:
         lines = [line.strip() for line in file if line.strip()]
 
+    values = np.array([float(line) for line in lines], dtype=float)
+    values = values[SKIP_INITIAL_LINES:]
+
     if line_mode == "odd":
-        selected_lines = lines[0::2]
+        selected_values = values[0::2]
     elif line_mode == "even":
-        selected_lines = lines[1::2]
+        selected_values = values[1::2]
     elif line_mode == "full":
-        selected_lines = lines
+        selected_values = values
     else:
         raise ValueError("LINE_MODE must be 'full', 'odd', or 'even'.")
 
-    values = [float(line) for line in selected_lines]
-    return np.array(values, dtype=float)
+    return np.array(selected_values, dtype=float)
 
 
 def main() -> None:
