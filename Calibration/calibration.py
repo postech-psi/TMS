@@ -1,16 +1,29 @@
 # truevalue = np.array 에 벽돌 올려놓는 순서대로 질량을 적어주어야 함
+# 해당 날짜의 폴더에 있는 cali_weights.txt 파일을 읽어서 truevalue로 사용할 수 있도록 함
+
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 import os
+from pathlib import Path
 
-data_dir = '/Users/leetaeho/TMS/Data/11_27/calidata' # 파일 있는 좌표로 사용하세요
-weights_file = '/Users/leetaeho/TMS/Data/11_27/weights.txt'  # 증분 질량 파일 경로
+# 년도와 날짜를 이름으로 폴더 만들고 그 안에 calidata 폴더와 cali_weights.txt 파일 넣어주기 
+YEAR = "2026"
+DATE_FOLDER = "4_2"
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+data_dir = PROJECT_ROOT / "Data" / YEAR / DATE_FOLDER / "calidata"
+weights_file = PROJECT_ROOT / "Data" / YEAR / DATE_FOLDER / "cali_weights.txt"
 measured_value = []
 
-for i in range(20):
-    filename = f'TMS_{2}.TXT'
-    filepath = os.path.join(data_dir, filename)
+data_files = sorted(
+    filename
+    for filename in os.listdir(data_dir)
+    if filename.upper().startswith("TEST") and filename.upper().endswith(".TXT")
+)
+
+for filename in data_files:
+    filepath = data_dir / filename
 
     if not os.path.isfile(filepath):
         print(f"파일 없음: {filename}")
@@ -71,5 +84,3 @@ plt.grid(True)
 plt.legend()
 plt.tight_layout()
 plt.show()
-
-
