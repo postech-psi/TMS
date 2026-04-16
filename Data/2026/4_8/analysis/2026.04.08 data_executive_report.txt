@@ -1,0 +1,43 @@
+========================================================================
+STATIC FIRE REPORT
+========================================================================
+
+Input file: TMS\Data\2026\4_8\2026.04.08 data.TXT
+Sampling rate: 320 sps
+
+------------------------------------------------------------------------
+THRUST METRICS
+------------------------------------------------------------------------
+Ignition delay: 7775.0 ms
+Peak thrust: 203.00 N
+Total impulse: 387.07 N s
+Average thrust: 144.03 N
+Burn duration: 2687.5 ms
+
+------------------------------------------------------------------------
+PRESSURE METRICS
+------------------------------------------------------------------------
+Peak pressure: 44.304 bar at 8.719 s
+
+------------------------------------------------------------------------
+CALIBRATION
+------------------------------------------------------------------------
+Loadcell calibration slope: -0.039100 kg/ADC
+Loadcell calibration intercept: -193.0049 kg
+Loadcell calibration R^2: 0.999948
+Pressure conversion: y = 0.0027x -0.11
+
+------------------------------------------------------------------------
+DATA PROCESSING
+------------------------------------------------------------------------
+Loadcell offset is measured from the pre-ignition raw-force window, then subtracted from raw force to create corrected force.
+Pressure offset is measured from the initial filtered-pressure window, then subtracted from both raw pressure and filtered pressure to create gauge pressure.
+Loadcell baseline offset: -2.366372 N
+Pressure baseline offset: -0.099480 bar
+Loadcell baseline window: 0.000000 to 3.887500 s (1244 samples, pre-ignition raw force)
+Pressure baseline window: first 0.500 s (160 samples, filtered pressure)
+Loadcell low-pass: applied to corrected force at 20.0 Hz, order 2
+Pressure low-pass: applied to raw pressure at 5.0 Hz, order 4
+Threshold: 6.09 N (3% of peak filtered force)
+
+========================================================================

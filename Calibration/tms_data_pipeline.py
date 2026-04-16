@@ -6,8 +6,8 @@ from scipy.signal import butter, filtfilt
 
 # ===== CONFIGURATION =====
 YEAR = "2026"
-DATE_FOLDER = "4_2"
-INPUT_FILENAME = "26.04.03 data.TXT"
+DATE_FOLDER = "4_8"
+INPUT_FILENAME = "2026.04.08 data.TXT"
 LOADCELL_CHANNEL_INDEX = 0
 BAROMETER_CHANNEL_INDEX = 1
 SKIP_INITIAL_LINES = 2
@@ -33,7 +33,7 @@ PRESSURE_BASELINE_WINDOW_SECONDS = 0.5
 # Pressure conversion
 PRESSURE_SLOPE = 0.0027
 PRESSURE_INTERCEPT = -0.11
-PRESSURE_LABEL = "Gauge Pressure"
+PRESSURE_LABEL = "Gauge Pressure [bar]"
 
 # Analysis
 PROPELLANT_MASS = None
@@ -295,6 +295,7 @@ def save_report(
 
     ensure_output_dir()
     report_path = get_output_path("executive_report.txt")
+    pressure_baseline_samples = max(5, int(PRESSURE_BASELINE_WINDOW_SECONDS * SAMPLING_RATE))
 
     with report_path.open("w", encoding="utf-8") as file:
         file.write(f"{REPORT_RULE}\n")
@@ -312,38 +313,15 @@ def save_report(
         ]
         if thrust_metrics["specific_impulse"] is not None:
             performance_lines.append(f"Specific impulse: {thrust_metrics['specific_impulse']:.1f} s")
-        write_report_section(file, "PERFORMANCE METRICS", performance_lines)
+        write_report_section(file, "THRUST METRICS", performance_lines)
 
         pressure_lines = [
-            f"Peak pressure: {pressure_metrics['peak_pressure']:.3f} at {pressure_metrics['peak_pressure_time']:.3f} s",
+            f"Peak pressure: {pressure_metrics['peak_pressure']:.3f} bar at {pressure_metrics['peak_pressure_time']:.3f} s",
         ]
         write_report_section(file, "PRESSURE METRICS", pressure_lines)
 
-        processing_lines = [
-            f"Drift correction: {drift_result['label']}",
-            "Thrust metrics are calculated from filtered corrected force.",
-            "Pressure metrics are calculated from filtered gauge pressure.",
-            f"Loadcell threshold ({THRESHOLD_PERCENT} percent): {thrust_metrics['threshold_force']:.2f} N",
-            f"Loadcell filter: Butterworth low-pass {LOADCELL_LOWPASS_CUTOFF_HZ:.1f} Hz, order {LOADCELL_LOWPASS_ORDER}",
-            f"Pressure filter: Butterworth low-pass {BAROMETER_LOWPASS_CUTOFF_HZ:.1f} Hz, order {BAROMETER_LOWPASS_ORDER}",
-            f"Pressure baseline offset: {pressure_baseline:.6f}",
-        ]
-        if drift_result["mode"] == "horizontal":
-            processing_lines.extend(
-                [
-                    f"Loadcell baseline offset: {drift_result['offset_force']:.6f} N",
-                    f"Loadcell baseline window end: {drift_result['averaging_end_time_s']:.6f} s "
-                    f"({drift_result['averaging_end_idx']} samples)",
-                    f"Ignition start time: {drift_result['ignition_time_s']:.6f} s",
-                ]
-            )
-        else:
-            processing_lines.append(f"Details: {drift_result['description']}")
-        write_report_section(file, "PROCESSING NOTES", processing_lines)
-
         write_report_section(
-            file,
-            "CALIBRATION AND CONVERSION",
+            file, "CALIBRATION",
             [
                 f"Loadcell calibration slope: {CALIBRATION_SLOPE:.6f} kg/ADC",
                 f"Loadcell calibration intercept: {CALIBRATION_INTERCEPT:.4f} kg",
@@ -351,6 +329,28 @@ def save_report(
                 f"Pressure conversion: y = {PRESSURE_SLOPE}x {PRESSURE_INTERCEPT:+.2f}",
             ],
         )
+
+        loadcell_baseline_line = "Loadcell baseline offset: not applied"
+        loadcell_window_line = "Loadcell baseline window: not used"
+        if drift_result["mode"] == "horizontal":
+            loadcell_baseline_line = f"Loadcell baseline offset: {drift_result['offset_force']:.6f} N"
+            loadcell_window_line = (
+                f"Loadcell baseline window: 0.000000 to {drift_result['averaging_end_time_s']:.6f} s "
+                f"({drift_result['averaging_end_idx']} samples, pre-ignition raw force)"
+            )
+        processing_lines = [
+            "Loadcell offset is measured from the pre-ignition raw-force window, then subtracted from raw force to create corrected force.",
+            "Pressure offset is measured from the initial filtered-pressure window, then subtracted from both raw pressure and filtered pressure to create gauge pressure.",
+            loadcell_baseline_line,
+            f"Pressure baseline offset: {pressure_baseline:.6f} bar",
+            loadcell_window_line,
+            f"Pressure baseline window: first {PRESSURE_BASELINE_WINDOW_SECONDS:.3f} s ({pressure_baseline_samples} samples, filtered pressure)",
+            f"Loadcell low-pass: applied to corrected force at {LOADCELL_LOWPASS_CUTOFF_HZ:.1f} Hz, order {LOADCELL_LOWPASS_ORDER}",
+            f"Pressure low-pass: applied to raw pressure at {BAROMETER_LOWPASS_CUTOFF_HZ:.1f} Hz, order {BAROMETER_LOWPASS_ORDER}",
+            f"Threshold: {thrust_metrics['threshold_force']:.2f} N ({THRESHOLD_PERCENT}% of peak filtered force)",
+        ]
+        write_report_section(file, "DATA PROCESSING", processing_lines)
+
         file.write(f"{REPORT_RULE}\n")
 
 

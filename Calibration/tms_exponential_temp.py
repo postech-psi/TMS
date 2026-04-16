@@ -8,8 +8,8 @@ from scipy.signal import butter, filtfilt
 
 # ===== CONFIGURATION =====
 YEAR = "2026"
-DATE_FOLDER = "4_2"
-INPUT_FILENAME = "26.04.03 data.TXT"
+DATE_FOLDER = "4_8"
+INPUT_FILENAME = "2026.04.08 data.TXT"
 DRIFT_FILENAME = "loadcell_drift.TXT"
 LOADCELL_CHANNEL_INDEX = 0
 BAROMETER_CHANNEL_INDEX = 1
@@ -47,7 +47,7 @@ GENERATE_PLOTS = True
 SAVE_PLOT = True
 SAVE_REPORT = True
 SAVE_DATA = True
-OUTPUT_FOLDER_NAME = "analysis"
+OUTPUT_FOLDER_NAME = "temp analysis"
 
 # Plot palette
 FORCE_RAW_COLOR = "#B8B8B8"

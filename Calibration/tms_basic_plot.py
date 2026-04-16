@@ -6,11 +6,11 @@ from scipy.signal import butter, filtfilt
 
 # ===== CONFIGURATION =====
 YEAR = "2026"
-DATE_FOLDER = "4_2"
-INPUT_FILENAME = "/temp/dynamic.TXT"
+DATE_FOLDER = "4_8"
+INPUT_FILENAME = "TMS_4.TXT"
 SAMPLING_RATE = 320
 # !!로드셀 켈리브레이션 코드의 경우 full 로 설정!!
-LINE_MODE = "full"  # "full", "odd", or "even" 
+LINE_MODE = "odd"  # "full", "odd", or "even" 
 SKIP_INITIAL_LINES = 2
 
 # Load cell calibration
