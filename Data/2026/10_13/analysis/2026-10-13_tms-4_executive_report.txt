@@ -1,0 +1,60 @@
+========================================================================
+STATIC FIRE REPORT
+========================================================================
+
+Input file: TMS/Data/2026/10_13/TMS_4.TXT
+Sampling rate: 320 sps
+
+------------------------------------------------------------------------
+DATA QUALITY
+------------------------------------------------------------------------
+Thrust status: provisional
+Pressure status: invalid_saturated
+Time axis assumes uniform 320 Hz sampling; no per-sample timestamps are logged.
+Ignition delay is time from recording start, not an independently logged fire command.
+Calibration is inherited from the existing pipeline; no same-day calibration was supplied.
+Pressure metrics withheld: raw ADC is clipped or stuck.
+Post-event baseline is at least half the 3% thrust threshold; burn end, average thrust, and impulse are provisional.
+Last threshold crossing is at the end of the recording; burn duration is not validated.
+
+------------------------------------------------------------------------
+THRUST METRICS
+------------------------------------------------------------------------
+PROVISIONAL: baseline shift contaminates the 3% end threshold and integration window.
+Ignition delay: 7321.9 ms
+Peak thrust: 166.01 N
+Total impulse: 370.22 N s
+Average thrust: 54.82 N
+Burn duration: 6753.1 ms
+
+------------------------------------------------------------------------
+PRESSURE METRICS
+------------------------------------------------------------------------
+Unavailable: ADC channel is clipped or stuck; baseline subtraction cannot recover pressure.
+
+------------------------------------------------------------------------
+CALIBRATION
+------------------------------------------------------------------------
+Loadcell calibration slope: -0.039100 kg/ADC
+Loadcell calibration intercept: -193.0049 kg
+Loadcell calibration R^2: 0.999948
+Pressure conversion: y = 0.0027x -0.11
+
+------------------------------------------------------------------------
+DATA PROCESSING
+------------------------------------------------------------------------
+Drift correction: Constant baseline offset
+Thrust metrics are calculated from filtered corrected force.
+Pressure metrics are calculated from filtered gauge pressure.
+Loadcell threshold (3 percent): 4.98 N
+Loadcell filter: Butterworth low-pass 20.0 Hz, order 2
+Pressure filter: Butterworth low-pass 5.0 Hz, order 4
+Pressure baseline offset: nan bar
+Pressure baseline window: first 0.500 s (up to 160 samples, filtered pressure)
+Loadcell offset is measured from pre-event raw force and subtracted before filtering.
+Pressure validity is checked before any offset subtraction; invalid channels remain unavailable.
+Loadcell baseline offset: -12.022081 N
+Loadcell baseline window end: 3.659375 s (1171 samples)
+Ignition start time: 7.321875 s
+
+========================================================================

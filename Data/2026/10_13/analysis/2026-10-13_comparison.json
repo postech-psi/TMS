@@ -1,0 +1,117 @@
+{
+  "references": [
+    {
+      "date": "2026-04-03",
+      "peak_N": 174.42,
+      "impulse_Ns": 368.74,
+      "burn_ms": 3287.5,
+      "rise_10_90_ms": 734.375,
+      "final_second_mean_N": -1.238465571875,
+      "peak_pressure_bar": 39.241,
+      "pressure_status": "historical",
+      "raw_available": true
+    },
+    {
+      "date": "2026-04-08",
+      "peak_N": 203.0,
+      "impulse_Ns": 387.07,
+      "burn_ms": 2687.5,
+      "rise_10_90_ms": 596.8750000000007,
+      "final_second_mean_N": 2.0754158937500002,
+      "peak_pressure_bar": 44.304,
+      "pressure_status": "historical",
+      "raw_available": true
+    },
+    {
+      "date": "2026-05-28",
+      "peak_N": 174.19,
+      "impulse_Ns": 366.33,
+      "burn_ms": 2818.7,
+      "rise_10_90_ms": 621.8750000000002,
+      "final_second_mean_N": 0.57156945625,
+      "peak_pressure_bar": 42.496,
+      "pressure_status": "historical",
+      "raw_available": true
+    },
+    {
+      "date": "2026-07-16",
+      "peak_N": 323.79,
+      "impulse_Ns": 484.66,
+      "burn_ms": 2331.2,
+      "rise_10_90_ms": 193.74999999999966,
+      "final_second_mean_N": 1.7882351875000002,
+      "peak_pressure_bar": 38.018,
+      "pressure_status": "suspect",
+      "raw_available": true
+    }
+  ],
+  "october": {
+    "input_file": "TMS/Data/2026/10_13/TMS_4.TXT",
+    "input_sha256": "1f471cdbf13943edb4db9337e90ee4f0498aaea551d4c1f9cf8fc9d12b4e1b24",
+    "pipeline_sha256": "a30adb6112b96a7bb676983715853745afde0d7d930035912a50a3f5e111d4d5",
+    "pipeline_revision": {
+      "code_commit": "7c717b7dfc8bdc745e766173d23c5b90ebf4827e",
+      "working_tree_modified": false
+    },
+    "sampling_start_us": 677895304,
+    "power_on_us": 525348,
+    "sample_count": 4505,
+    "sampling_rate_hz": 320,
+    "nominal_last_sample_s": 14.075,
+    "nominal_coverage_s": 14.078125,
+    "timing": "Uniform 320 Hz assumed, not verified; firmware targets 15 seconds and logs no per-sample timestamps.",
+    "calibration": {
+      "slope_kg_per_adc": -0.0391,
+      "intercept_kg": -193.0049,
+      "r_squared": 0.999948,
+      "same_day_calibration_supplied": false
+    },
+    "quality": {
+      "thrust_status": "provisional",
+      "event_detected": true,
+      "loadcell_clipped_samples": 0,
+      "pressure_status": "invalid_saturated",
+      "pressure_clipped_samples": 4505,
+      "pressure_unique_codes": 1,
+      "baseline_raw_std_N": 1.0072116699082594,
+      "event_gate_N": 10.072116699082594,
+      "event_gate_duration_s": 0.1,
+      "warnings": [
+        "Pressure metrics withheld: raw ADC is clipped or stuck.",
+        "Post-event baseline is at least half the 3% thrust threshold; burn end, average thrust, and impulse are provisional.",
+        "Last threshold crossing is at the end of the recording; burn duration is not validated."
+      ],
+      "tail_mean_N": 4.961337125461183,
+      "tail_std_N": 0.15725957870264254,
+      "burn_end_censored": true
+    },
+    "thrust": {
+      "peak_thrust": 166.0133149580275,
+      "peak_time": 8.421875,
+      "peak_idx": 2695,
+      "ignition_idx": 2343,
+      "ignition_time": 7.321875,
+      "burnout_idx": 4504,
+      "burnout_time": 14.075,
+      "burn_time": 6.753124999999999,
+      "ignition_delay": 7.321875,
+      "total_impulse": 370.2159968290365,
+      "avg_thrust": 54.82143405150009,
+      "specific_impulse": null,
+      "threshold_force": 4.980399448740825
+    },
+    "pressure": {
+      "peak_pressure": null,
+      "peak_pressure_time": null
+    },
+    "baseline_offset_N": -12.02208110472653,
+    "baseline_sample_count": 1171
+  },
+  "baseline_sensitivity": {
+    "method": "Illustrative linear pre/post-baseline interpolation, not a validated correction",
+    "peak_N": 165.06480734500065,
+    "impulse_Ns": 348.21673845176633,
+    "duration_s": 3.421875
+  },
+  "warning": "Different motor/setup details and same-day calibration are unavailable. Similarity does not validate performance."
+}

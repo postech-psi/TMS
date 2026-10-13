@@ -6,7 +6,7 @@ TMS는 정적 연소 시험(static fire test)에서 추력을 계측하기 위�
 ## Repo 구성
 
 - `TMS Unit/`
-  - Arduino 펌웨어 (`20251126_tms_code.ino`, `20251126_tms_code_debug_ver.ino`)
+  - Arduino 펌웨어 (`tms_code.ino`, `tms_debug.ino`)
 - `Calibration/`
   - 로드셀 보정, raw 데이터 변환, 추력 곡선 분석 스크립트
 - `Data/`
@@ -34,3 +34,8 @@ TMS는 정적 연소 시험(static fire test)에서 추력을 계측하기 위�
 | `CS_PIN` | 4 | SD 카드 chip select |
 | `Loadcell` | `0x48` | 로드셀용 ADS1115 주소 |
 | `Pressure` | `0x49` | 압력센서용 ADS1115 주소 |
+
+## 최신 분석 자료
+
+- [2026년 10월 13일 시험 기록](./Data/2026/10_13/README.md): 추력 잠정값, 압력 사용 불가. 원자료와 영상 및 이전 TMS 비교를 함께 보관합니다.
+- [분석 파이프라인](./Calibration/README_tms_pipeline.md): 새 분석 전 반드시 원격 저장소를 갱신하고 가장 최근 push된 파이프라인을 사용합니다. 결과에는 코드 commit과 SHA-256을 기록합니다.

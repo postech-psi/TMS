@@ -1,0 +1,55 @@
+{
+  "input_file": "TMS/Data/2026/10_13/TMS_5.TXT",
+  "input_sha256": "c7980058fa21a988e90a86ff5f93b0ff44d7e6cd366002f6e36de6b553f7be48",
+  "pipeline_sha256": "a30adb6112b96a7bb676983715853745afde0d7d930035912a50a3f5e111d4d5",
+  "pipeline_revision": {
+    "code_commit": "7c717b7dfc8bdc745e766173d23c5b90ebf4827e",
+    "working_tree_modified": false
+  },
+  "sampling_start_us": 693483544,
+  "power_on_us": 525348,
+  "sample_count": 4444,
+  "sampling_rate_hz": 320,
+  "nominal_last_sample_s": 13.884375,
+  "nominal_coverage_s": 13.8875,
+  "timing": "Uniform 320 Hz assumed, not verified; firmware targets 15 seconds and logs no per-sample timestamps.",
+  "calibration": {
+    "slope_kg_per_adc": -0.0391,
+    "intercept_kg": -193.0049,
+    "r_squared": 0.999948,
+    "same_day_calibration_supplied": false
+  },
+  "quality": {
+    "thrust_status": "no_event",
+    "event_detected": false,
+    "loadcell_clipped_samples": 0,
+    "pressure_status": "invalid_saturated",
+    "pressure_clipped_samples": 4444,
+    "pressure_unique_codes": 1,
+    "baseline_raw_std_N": 0.4715627768451428,
+    "event_gate_N": 5.0,
+    "event_gate_duration_s": 0.1,
+    "warnings": [
+      "Pressure metrics withheld: raw ADC is clipped or stuck.",
+      "No sustained thrust event; noise is not published as a combustion test."
+    ]
+  },
+  "thrust": {
+    "peak_thrust": null,
+    "peak_time": null,
+    "ignition_time": null,
+    "burnout_time": null,
+    "burn_time": null,
+    "ignition_delay": null,
+    "total_impulse": null,
+    "avg_thrust": null,
+    "threshold_force": null,
+    "specific_impulse": null
+  },
+  "pressure": {
+    "peak_pressure": null,
+    "peak_pressure_time": null
+  },
+  "baseline_offset_N": -7.090937319593553,
+  "baseline_sample_count": 160
+}
