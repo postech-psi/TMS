@@ -1,3 +1,7 @@
+import argparse
+import hashlib
+import json
+import subprocess
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -6,8 +10,8 @@ from scipy.signal import butter, filtfilt
 
 # ===== CONFIGURATION =====
 YEAR = "2026"
-DATE_FOLDER = "7_16"
-INPUT_FILENAME = "2026.07.16 data.TXT"
+DATE_FOLDER = "10_13"
+INPUT_FILENAME = "TMS_4.TXT"
 LOADCELL_CHANNEL_INDEX = 0
 BAROMETER_CHANNEL_INDEX = 1
 SKIP_INITIAL_LINES = 2
@@ -78,11 +82,17 @@ OUTPUT_DIR = DATA_DIR / OUTPUT_FOLDER_NAME
 REPORT_RULE = "=" * 72
 SECTION_RULE = "-" * 72
 INTERLEAVED_CHANNEL_COUNT = 2
+OUTPUT_PREFIX = None
+SHOW_PLOTS = True
 
 
 # ===== INPUT LOADING =====
-def load_interleaved_channel(file_path: str | Path, channel_index: int) -> np.ndarray:
-    """Load one channel from an interleaved TMS text file."""
+def load_recording(file_path: str | Path) -> dict[str, object]:
+    """Read the two uptime header lines, then paired signed 16-bit ADC values.
+
+    A two-line file is the firmware's setup probe, not a timed recording.
+    Calendar dates and individual sample timestamps are absent from this format.
+    """
     file_path = Path(file_path)
     if not file_path.is_file():
         raise FileNotFoundError(f"File not found: {file_path}")
@@ -90,8 +100,32 @@ def load_interleaved_channel(file_path: str | Path, channel_index: int) -> np.nd
     with file_path.open("r", encoding="utf-8") as file:
         lines = [line.strip() for line in file if line.strip()]
 
-    values = [float(lines[i]) for i in range(channel_index, len(lines), INTERLEAVED_CHANNEL_COUNT)]
-    return np.array(values, dtype=float)[SKIP_INITIAL_LINES:]
+    if len(lines) <= SKIP_INITIAL_LINES:
+        raise ValueError(f"{file_path.name}: startup-only file; no timed samples")
+    try:
+        values = np.array([int(line) for line in lines], dtype=np.int64)
+    except ValueError as exc:
+        raise ValueError(f"{file_path.name}: expected one integer per line") from exc
+    header, payload = values[:SKIP_INITIAL_LINES], values[SKIP_INITIAL_LINES:]
+    if payload.size % INTERLEAVED_CHANNEL_COUNT:
+        raise ValueError(f"{file_path.name}: incomplete loadcell/pressure pair")
+    if np.any((payload < -32768) | (payload > 32767)):
+        raise ValueError(f"{file_path.name}: ADC sample outside signed 16-bit range")
+    if header.size != 2 or np.any(header < 0) or np.any(header > 2**32 - 1):
+        raise ValueError(f"{file_path.name}: invalid uptime header")
+    return {
+        "sampling_start_us": int(header[0]), "power_on_us": int(header[1]),
+        "loadcell_adc": payload[LOADCELL_CHANNEL_INDEX::2].astype(float),
+        "pressure_adc": payload[BAROMETER_CHANNEL_INDEX::2].astype(float),
+    }
+
+
+def load_interleaved_channel(file_path: str | Path, channel_index: int) -> np.ndarray:
+    """Skip header lines BEFORE splitting; preserve the first sensor pair."""
+    if channel_index not in (LOADCELL_CHANNEL_INDEX, BAROMETER_CHANNEL_INDEX):
+        raise ValueError("channel_index must be 0 or 1")
+    recording = load_recording(file_path)
+    return recording["loadcell_adc" if channel_index == LOADCELL_CHANNEL_INDEX else "pressure_adc"]
 
 
 # ===== SIGNAL CONVERSION AND CORRECTION =====
@@ -115,7 +149,7 @@ def zero_phase_lowpass(values: np.ndarray, cutoff_hz: float, order: int) -> np.n
         raise ValueError(f"cutoff_hz must be between 0 and {nyquist_hz:.2f} Hz")
 
     b, a = butter(order, cutoff_hz / nyquist_hz, btype="low")
-    padlen = 3 * (max(len(a), len(b)) - 1)
+    padlen = 3 * max(len(a), len(b))
     if values.size <= padlen:
         return values.copy()
     return filtfilt(b, a, values)
@@ -256,7 +290,7 @@ def calculate_thrust_metrics(
 # ===== REPORT AND SAVED-DATA OUTPUT =====
 def get_output_path(suffix: str) -> Path:
     """Build an output path for the current input file."""
-    return OUTPUT_DIR / f"{Path(INPUT_FILENAME).stem}_{suffix}"
+    return OUTPUT_DIR / f"{OUTPUT_PREFIX or Path(INPUT_FILENAME).stem}_{suffix}"
 
 
 def ensure_output_dir() -> None:
@@ -288,6 +322,7 @@ def save_report(
     pressure_metrics: dict[str, float],
     drift_result: dict[str, object],
     pressure_baseline: float,
+    quality: dict | None = None,
 ) -> None:
     """Save the executive report as a text file."""
     if not SAVE_REPORT:
@@ -295,7 +330,6 @@ def save_report(
 
     ensure_output_dir()
     report_path = get_output_path("executive_report.txt")
-    pressure_baseline_samples = max(5, int(PRESSURE_BASELINE_WINDOW_SECONDS * SAMPLING_RATE))
 
     with report_path.open("w", encoding="utf-8") as file:
         file.write(f"{REPORT_RULE}\n")
@@ -303,6 +337,16 @@ def save_report(
         file.write(f"{REPORT_RULE}\n\n")
         file.write(f"Input file: {format_project_relative_path(INPUT_FILE)}\n")
         file.write(f"Sampling rate: {SAMPLING_RATE} sps\n\n")
+
+        if quality:
+            write_report_section(file, "DATA QUALITY", [
+                f"Thrust status: {quality['thrust_status']}",
+                f"Pressure status: {quality['pressure_status']}",
+                "Time axis assumes uniform 320 Hz sampling; no per-sample timestamps are logged.",
+                "Ignition delay is time from recording start, not an independently logged fire command.",
+                "Calibration is inherited from the existing pipeline; no same-day calibration was supplied.",
+                *quality["warnings"],
+            ])
 
         performance_lines = [
             f"Ignition delay: {thrust_metrics['ignition_delay'] * 1000:.1f} ms",
@@ -313,15 +357,22 @@ def save_report(
         ]
         if thrust_metrics["specific_impulse"] is not None:
             performance_lines.append(f"Specific impulse: {thrust_metrics['specific_impulse']:.1f} s")
+        if quality and quality["thrust_status"] == "no_event":
+            performance_lines = ["No sustained thrust event above the noise gate; performance metrics unavailable."]
+        elif quality and quality["thrust_status"] == "provisional":
+            performance_lines.insert(0, "PROVISIONAL: baseline shift contaminates the 3% end threshold and integration window.")
         write_report_section(file, "THRUST METRICS", performance_lines)
 
         pressure_lines = [
             f"Peak pressure: {pressure_metrics['peak_pressure']:.3f} bar at {pressure_metrics['peak_pressure_time']:.3f} s",
         ]
+        if quality and quality["pressure_status"] != "usable":
+            pressure_lines = ["Unavailable: ADC channel is clipped or stuck; baseline subtraction cannot recover pressure."]
         write_report_section(file, "PRESSURE METRICS", pressure_lines)
 
         write_report_section(
-            file, "CALIBRATION",
+            file,
+            "CALIBRATION",
             [
                 f"Loadcell calibration slope: {CALIBRATION_SLOPE:.6f} kg/ADC",
                 f"Loadcell calibration intercept: {CALIBRATION_INTERCEPT:.4f} kg",
@@ -330,25 +381,29 @@ def save_report(
             ],
         )
 
-        loadcell_baseline_line = "Loadcell baseline offset: not applied"
-        loadcell_window_line = "Loadcell baseline window: not used"
-        if drift_result["mode"] == "horizontal":
-            loadcell_baseline_line = f"Loadcell baseline offset: {drift_result['offset_force']:.6f} N"
-            loadcell_window_line = (
-                f"Loadcell baseline window: 0.000000 to {drift_result['averaging_end_time_s']:.6f} s "
-                f"({drift_result['averaging_end_idx']} samples, pre-ignition raw force)"
-            )
         processing_lines = [
-            "Loadcell offset is measured from the pre-ignition raw-force window, then subtracted from raw force to create corrected force.",
-            "Pressure offset is measured from the initial filtered-pressure window, then subtracted from both raw pressure and filtered pressure to create gauge pressure.",
-            loadcell_baseline_line,
+            f"Drift correction: {drift_result['label']}",
+            "Thrust metrics are calculated from filtered corrected force.",
+            "Pressure metrics are calculated from filtered gauge pressure.",
+            f"Loadcell threshold ({THRESHOLD_PERCENT} percent): {thrust_metrics['threshold_force']:.2f} N",
+            f"Loadcell filter: Butterworth low-pass {LOADCELL_LOWPASS_CUTOFF_HZ:.1f} Hz, order {LOADCELL_LOWPASS_ORDER}",
+            f"Pressure filter: Butterworth low-pass {BAROMETER_LOWPASS_CUTOFF_HZ:.1f} Hz, order {BAROMETER_LOWPASS_ORDER}",
             f"Pressure baseline offset: {pressure_baseline:.6f} bar",
-            loadcell_window_line,
-            f"Pressure baseline window: first {PRESSURE_BASELINE_WINDOW_SECONDS:.3f} s ({pressure_baseline_samples} samples, filtered pressure)",
-            f"Loadcell low-pass: applied to corrected force at {LOADCELL_LOWPASS_CUTOFF_HZ:.1f} Hz, order {LOADCELL_LOWPASS_ORDER}",
-            f"Pressure low-pass: applied to raw pressure at {BAROMETER_LOWPASS_CUTOFF_HZ:.1f} Hz, order {BAROMETER_LOWPASS_ORDER}",
-            f"Threshold: {thrust_metrics['threshold_force']:.2f} N ({THRESHOLD_PERCENT}% of peak filtered force)",
+            f"Pressure baseline window: first {PRESSURE_BASELINE_WINDOW_SECONDS:.3f} s (up to {int(PRESSURE_BASELINE_WINDOW_SECONDS * SAMPLING_RATE)} samples, filtered pressure)",
+            "Loadcell offset is measured from pre-event raw force and subtracted before filtering.",
+            "Pressure validity is checked before any offset subtraction; invalid channels remain unavailable.",
         ]
+        if drift_result["mode"] == "horizontal":
+            processing_lines.extend(
+                [
+                    f"Loadcell baseline offset: {drift_result['offset_force']:.6f} N",
+                    f"Loadcell baseline window end: {drift_result['averaging_end_time_s']:.6f} s "
+                    f"({drift_result['averaging_end_idx']} samples)",
+                    f"Ignition start time: {drift_result['ignition_time_s']:.6f} s",
+                ]
+            )
+        else:
+            processing_lines.append(f"Details: {drift_result['description']}")
         write_report_section(file, "DATA PROCESSING", processing_lines)
 
         file.write(f"{REPORT_RULE}\n")
@@ -362,6 +417,8 @@ def save_pipeline_data(
     filtered_force: np.ndarray,
     raw_gauge_pressure: np.ndarray,
     filtered_gauge_pressure: np.ndarray,
+    loadcell_adc: np.ndarray | None = None,
+    pressure_adc: np.ndarray | None = None,
 ) -> None:
     """Save processed analysis data as a text file."""
     if not SAVE_DATA:
@@ -369,24 +426,18 @@ def save_pipeline_data(
 
     ensure_output_dir()
     data_path = get_output_path("pipeline_data.txt")
+    columns = [time, raw_force, modeled_drift, corrected_force, filtered_force,
+               raw_gauge_pressure, filtered_gauge_pressure]
+    header = ("time_s\traw_force_N\tdrift_model_N\tcorrected_force_N\tfiltered_force_N\t"
+              "raw_gauge_pressure\tfiltered_gauge_pressure")
+    if loadcell_adc is not None and pressure_adc is not None:
+        columns.extend([loadcell_adc, pressure_adc])
+        header += "\tloadcell_adc\tpressure_adc"
     np.savetxt(
         data_path,
-        np.column_stack(
-            (
-                time,
-                raw_force,
-                modeled_drift,
-                corrected_force,
-                filtered_force,
-                raw_gauge_pressure,
-                filtered_gauge_pressure,
-            )
-        ),
+        np.column_stack(columns),
         delimiter="\t",
-        header=(
-            "time_s\traw_force_N\tdrift_model_N\tcorrected_force_N\tfiltered_force_N\t"
-            "raw_gauge_pressure\tfiltered_gauge_pressure"
-        ),
+        header=header,
         comments="",
         fmt="%.6f",
     )
@@ -653,58 +704,185 @@ def plot_combined_loadcell_barometer(
     save_current_figure("combined_plot.png")
 
 
-def main() -> None:
-    loadcell_adc = load_interleaved_channel(INPUT_FILE, LOADCELL_CHANNEL_INDEX)
-    barometer_raw = load_interleaved_channel(INPUT_FILE, BAROMETER_CHANNEL_INDEX)
-    time = np.arange(loadcell_adc.size) / SAMPLING_RATE
-
+def assess_channels(loadcell_adc: np.ndarray, pressure_adc: np.ndarray) -> dict:
+    """Conservative validity gate before baseline subtraction can hide failures."""
     raw_force = calibrated_force(loadcell_adc)
-    raw_pressure = convert_to_pressure(barometer_raw)
+    seed = raw_force[:min(raw_force.size, int(0.5 * SAMPLING_RATE))]
+    noise = float(np.std(seed))
+    gate = max(5.0, 10.0 * noise)
+    filtered = zero_phase_lowpass(raw_force - np.mean(seed), LOADCELL_LOWPASS_CUTOFF_HZ, LOADCELL_LOWPASS_ORDER)
+    above = filtered > gate
+    sustained = max(1, int(0.1 * SAMPLING_RATE))
+    has_event = bool(above.size >= sustained and np.any(np.convolve(above.astype(int), np.ones(sustained, dtype=int), mode="valid") == sustained))
+    clipped = (pressure_adc >= 32767) | (pressure_adc <= -32768)
+    load_clipped = (loadcell_adc >= 32767) | (loadcell_adc <= -32768)
+    pressure_status = "invalid_saturated" if np.any(clipped) else "invalid_stuck" if np.ptp(pressure_adc) == 0 else "usable"
+    return {
+        "thrust_status": "provisional" if np.any(load_clipped) else "event_detected" if has_event else "no_event",
+        "event_detected": has_event,
+        "loadcell_clipped_samples": int(np.sum(load_clipped)),
+        "pressure_status": pressure_status,
+        "pressure_clipped_samples": int(np.sum(clipped)),
+        "pressure_unique_codes": int(np.unique(pressure_adc).size),
+        "baseline_raw_std_N": noise,
+        "event_gate_N": gate,
+        "event_gate_duration_s": sustained / SAMPLING_RATE,
+        "warnings": ["Pressure metrics withheld: raw ADC is clipped or stuck."] if pressure_status != "usable" else [],
+    }
 
-    drift_result = apply_drift_correction(raw_force)
-    modeled_drift = drift_result["modeled_drift"]
-    corrected_force = drift_result["corrected_force"]
+
+def json_safe(value):
+    """Strict JSON uses null for unavailable metrics, never NaN or a false zero."""
+    if isinstance(value, dict):
+        return {k: json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_safe(v) for v in value]
+    if isinstance(value, (float, np.floating)) and not np.isfinite(value):
+        return None
+    if isinstance(value, np.generic):
+        return value.item()
+    return value
+
+
+def pipeline_revision() -> dict:
+    """Identify the commit containing this code, only if its bytes are committed."""
+    try:
+        relative = Path(__file__).resolve().relative_to(PROJECT_ROOT).as_posix()
+        current = subprocess.run(["git", "-C", str(PROJECT_ROOT), "show", f"HEAD:{relative}"], capture_output=True, check=True)
+        modified = current.stdout != Path(__file__).read_bytes()
+        revision = subprocess.run(["git", "-C", str(PROJECT_ROOT), "log", "-1", "--format=%H", "--", relative], capture_output=True, text=True, check=True).stdout.strip()
+        return {"code_commit": None if modified else revision, "working_tree_modified": modified}
+    except (OSError, ValueError, subprocess.CalledProcessError):
+        return {"code_commit": None, "working_tree_modified": None}
+
+
+def plot_quality_diagnostics(time, corrected, filtered, pressure_adc, quality, metrics):
+    """Show the entire recording, including post-event offset and failed ADC."""
+    for kind in ("loadcell", "barometer", "combined"):
+        fig, ax = plt.subplots(figsize=(12, 5.5))
+        if kind == "barometer":
+            ax.plot(time, pressure_adc, color=PRESSURE_FILTERED_COLOR, label="Recorded pressure ADC")
+            ax.set_ylabel("Pressure ADC (counts)")
+            ax.set_ylim(32760, 32770) if np.all(pressure_adc == 32767) else None
+        else:
+            ax.plot(time, corrected, color=FORCE_RAW_COLOR, alpha=.65, linewidth=.8, label="Baseline-corrected force")
+            ax.plot(time, filtered, color=FORCE_FILTERED_COLOR, linewidth=1.7, label="Filtered force")
+            ax.set_ylabel("Force (N)")
+            if quality["event_detected"]:
+                ax.axvline(metrics["ignition_time"], color=IGNITION_MARK_COLOR, linestyle=":", label="3% onset")
+                ax.axhline(metrics["threshold_force"], color=THRESHOLD_COLOR, linestyle="--", label="3% threshold")
+            if kind == "combined":
+                ax.text(.02, .96, "Pressure unavailable: raw ADC clipped/stuck", transform=ax.transAxes, va="top", color=PRESSURE_FILTERED_COLOR)
+        ax.set_title(f"{INPUT_FILENAME} | {quality['thrust_status']} thrust | {quality['pressure_status']} pressure")
+        ax.set_xlabel("Time from recording start (s), nominal 320 Hz")
+        ax.set_xlim(time[0], time[-1])
+        ax.grid(alpha=.25)
+        ax.legend(loc="upper right")
+        if quality["thrust_status"] == "provisional" and kind != "barometer":
+            ax.text(.02, .04, "Post-event offset affects burn end and impulse; see quality report", transform=ax.transAxes)
+        fig.tight_layout()
+        save_current_figure(f"{kind}_plot.png")
+        plt.close(fig)
+
+
+def main() -> dict:
+    recording = load_recording(INPUT_FILE)
+    loadcell_adc, barometer_raw = recording["loadcell_adc"], recording["pressure_adc"]
+    time = np.arange(loadcell_adc.size) / SAMPLING_RATE
+    quality = assess_channels(loadcell_adc, barometer_raw)
+    raw_force = calibrated_force(loadcell_adc)
+    if quality["event_detected"]:
+        drift_result = apply_drift_correction(raw_force)
+    else:
+        count = min(raw_force.size, int(.5 * SAMPLING_RATE))
+        offset = float(np.mean(raw_force[:count]))
+        drift_result = {"mode": "horizontal", "label": "Initial idle baseline (no event)",
+                        "modeled_drift": np.full_like(raw_force, offset), "corrected_force": raw_force - offset,
+                        "offset_force": offset, "averaging_end_idx": count,
+                        "averaging_end_time_s": count / SAMPLING_RATE, "ignition_time_s": float("nan")}
+    modeled_drift, corrected_force = drift_result["modeled_drift"], drift_result["corrected_force"]
     filtered_force = zero_phase_lowpass(corrected_force, LOADCELL_LOWPASS_CUTOFF_HZ, LOADCELL_LOWPASS_ORDER)
-
-    filtered_pressure = zero_phase_lowpass(raw_pressure, BAROMETER_LOWPASS_CUTOFF_HZ, BAROMETER_LOWPASS_ORDER)
-    pressure_baseline = calculate_pressure_baseline(filtered_pressure)
-    raw_gauge_pressure = raw_pressure - pressure_baseline
-    filtered_gauge_pressure = filtered_pressure - pressure_baseline
-
-    pressure_metrics = calculate_pressure_metrics(time, filtered_gauge_pressure)
-    thrust_metrics = calculate_thrust_metrics(
-        time,
-        filtered_force,
-        PROPELLANT_MASS,
-    )
-
-    save_report(thrust_metrics, pressure_metrics, drift_result, pressure_baseline)
-    save_pipeline_data(
-        time,
-        raw_force,
-        modeled_drift,
-        corrected_force,
-        filtered_force,
-        raw_gauge_pressure,
-        filtered_gauge_pressure,
-    )
-
+    if quality["pressure_status"] == "usable":
+        raw_pressure = convert_to_pressure(barometer_raw)
+        filtered_pressure = zero_phase_lowpass(raw_pressure, BAROMETER_LOWPASS_CUTOFF_HZ, BAROMETER_LOWPASS_ORDER)
+        pressure_baseline = calculate_pressure_baseline(filtered_pressure)
+        raw_gauge_pressure, filtered_gauge_pressure = raw_pressure - pressure_baseline, filtered_pressure - pressure_baseline
+        pressure_metrics = calculate_pressure_metrics(time, filtered_gauge_pressure)
+    else:
+        pressure_baseline = float("nan")
+        raw_gauge_pressure = np.full_like(time, np.nan)
+        filtered_gauge_pressure = np.full_like(time, np.nan)
+        pressure_metrics = {"peak_pressure": float("nan"), "peak_pressure_time": float("nan")}
+    if quality["event_detected"]:
+        thrust_metrics = calculate_thrust_metrics(time, filtered_force, PROPELLANT_MASS)
+        tail = filtered_force[-min(filtered_force.size, SAMPLING_RATE):]
+        quality["tail_mean_N"], quality["tail_std_N"] = float(np.mean(tail)), float(np.std(tail))
+        if abs(quality["tail_mean_N"]) >= .5 * thrust_metrics["threshold_force"]:
+            quality["thrust_status"] = "provisional"
+            quality["warnings"].append("Post-event baseline is at least half the 3% thrust threshold; burn end, average thrust, and impulse are provisional.")
+        quality["burn_end_censored"] = thrust_metrics["burnout_idx"] >= len(time) - 1
+        if quality["burn_end_censored"]:
+            quality["thrust_status"] = "provisional"
+            quality["warnings"].append("Last threshold crossing is at the end of the recording; burn duration is not validated.")
+    else:
+        thrust_metrics = {k: float("nan") for k in ("peak_thrust", "peak_time", "ignition_time", "burnout_time", "burn_time", "ignition_delay", "total_impulse", "avg_thrust", "threshold_force")}
+        thrust_metrics["specific_impulse"] = None
+        quality["warnings"].append("No sustained thrust event; noise is not published as a combustion test.")
+    ensure_output_dir()
+    save_report(thrust_metrics, pressure_metrics, drift_result, pressure_baseline, quality)
+    save_pipeline_data(time, raw_force, modeled_drift, corrected_force, filtered_force,
+                       raw_gauge_pressure, filtered_gauge_pressure, loadcell_adc, barometer_raw)
     if GENERATE_PLOTS:
-        plot_loadcell_summary(time, corrected_force, filtered_force, thrust_metrics)
-        plot_barometer_summary(time, raw_gauge_pressure, filtered_gauge_pressure, thrust_metrics, pressure_metrics)
-        plot_combined_loadcell_barometer(
-            time,
-            corrected_force,
-            filtered_force,
-            raw_gauge_pressure,
-            filtered_gauge_pressure,
-            thrust_metrics,
-            pressure_metrics,
-        )
-        plt.show()
+        if quality["pressure_status"] != "usable" or not quality["event_detected"]:
+            plot_quality_diagnostics(time, corrected_force, filtered_force, barometer_raw, quality, thrust_metrics)
+        else:
+            plot_loadcell_summary(time, corrected_force, filtered_force, thrust_metrics)
+            plot_barometer_summary(time, raw_gauge_pressure, filtered_gauge_pressure, thrust_metrics, pressure_metrics)
+            plot_combined_loadcell_barometer(time, corrected_force, filtered_force, raw_gauge_pressure, filtered_gauge_pressure, thrust_metrics, pressure_metrics)
+            if SHOW_PLOTS:
+                plt.show()
+            plt.close("all")
+    result = json_safe({
+        "input_file": format_project_relative_path(INPUT_FILE),
+        "input_sha256": hashlib.sha256(Path(INPUT_FILE).read_bytes()).hexdigest(),
+        "pipeline_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "pipeline_revision": pipeline_revision(),
+        "sampling_start_us": recording["sampling_start_us"], "power_on_us": recording["power_on_us"],
+        "sample_count": len(time), "sampling_rate_hz": SAMPLING_RATE,
+        "nominal_last_sample_s": float(time[-1]), "nominal_coverage_s": len(time) / SAMPLING_RATE,
+        "timing": "Uniform 320 Hz assumed, not verified; firmware targets 15 seconds and logs no per-sample timestamps.",
+        "calibration": {"slope_kg_per_adc": CALIBRATION_SLOPE, "intercept_kg": CALIBRATION_INTERCEPT,
+                        "r_squared": CALIBRATION_R_SQUARED, "same_day_calibration_supplied": False},
+        "quality": quality, "thrust": thrust_metrics, "pressure": pressure_metrics,
+        "baseline_offset_N": drift_result["offset_force"], "baseline_sample_count": drift_result["averaging_end_idx"],
+    })
+    get_output_path("quality.json").write_text(json.dumps(result, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+    print(f"{INPUT_FILENAME}: thrust={quality['thrust_status']}, pressure={quality['pressure_status']}, samples={len(time)}")
+    return result
 
-    print_terminal_summary(thrust_metrics, pressure_metrics, drift_result, loadcell_adc.size, barometer_raw.size)
+
+def cli() -> None:
+    global INPUT_FILE, INPUT_FILENAME, OUTPUT_DIR, OUTPUT_PREFIX, SHOW_PLOTS, GENERATE_PLOTS, PLOT_DPI
+    parser = argparse.ArgumentParser(description="Analyze a paired TMS recording; reject startup probes and withhold invalid pressure.")
+    parser.add_argument("--input", type=Path, help="Raw TMS file; defaults to the configured legacy dataset")
+    parser.add_argument("--output-dir", type=Path, help="Output directory; defaults to the selected input's analysis folder")
+    parser.add_argument("--prefix", help="Output filename stem, e.g. 2026-10-13_tms-4")
+    parser.add_argument("--no-show", action="store_true", help="Save figures without opening an interactive window")
+    parser.add_argument("--no-plots", action="store_true")
+    parser.add_argument("--dpi", type=int, default=PLOT_DPI)
+    args = parser.parse_args()
+    if args.input:
+        INPUT_FILE = args.input.resolve()
+        INPUT_FILENAME = INPUT_FILE.name
+        OUTPUT_DIR = INPUT_FILE.parent / OUTPUT_FOLDER_NAME
+    if args.output_dir:
+        OUTPUT_DIR = args.output_dir.resolve()
+    OUTPUT_PREFIX, SHOW_PLOTS, GENERATE_PLOTS, PLOT_DPI = args.prefix, not args.no_show, not args.no_plots, args.dpi
+    try:
+        main()
+    except (ValueError, FileNotFoundError) as exc:
+        parser.error(str(exc))
 
 
 if __name__ == "__main__":
-    main()
+    cli()
