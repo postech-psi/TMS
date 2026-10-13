@@ -3,7 +3,7 @@
 Use `tms_data_pipeline.py` for normal static fire analysis. `tms_exponential_temp.py` remains experimental.
 
 ```sh
-python Calibration/tms_data_pipeline.py --input Data/2026/10_13/TMS_4.TXT --prefix 2026-10-13_tms-4 --no-show
+python Calibration/tms_data_pipeline.py --input Data/2026/10_13/TMS_4.TXT --prefix 2026-10-13_tms-4 --burnout-fit-window 9.65 9.85 --no-show
 python -m unittest discover -s Calibration -p 'test_tms_pipeline.py'
 ```
 
@@ -38,3 +38,13 @@ Raw files remain unchanged under `Data/<year>/<month_day>/`. Canonical derived f
 Each timed recording produces `executive_report.txt`, `pipeline_data.txt`, `quality.json`, and `loadcell_plot.png`, `barometer_plot.png`, `combined_plot.png`. TSV retains the original seven columns and appends both raw ADC columns. Quality JSON contains raw/source code hashes, header values, samples, gate settings, calibration assumptions, channel status, warnings, and derived metrics. Keep the session inventory and comparisons with the raw files.
 
 For the October session, TMS_4 alone has a clear thrust event; TMS_2 and TMS_5 are no-event recordings; TMS_1 and TMS_3 are startup probes. All pressure samples are 32767. See the session README for measured results and limits.
+
+## Optional burnout extrapolation
+
+For an anomalous tail, `--burnout-fit-window START_S END_S` fits the measured filtered decay before that tail. The October TMS_4 processing uses 9.65–9.85 s. This is an explicit per-record processing choice, not an automatic rule for every firing.
+
+Least squares supplies a descending slope, intercept, and R². A fit must follow the force peak, contain at least 10 samples, have R² ≥ 0.95, and cross 3% peak after the selected window but reach zero within the recording. The published end retains the existing 3% definition; the zero crossing is also recorded.
+
+`filtered_force_N`, corrected force, ADC values, and all raw bytes remain measured data. An additional `analysis_force_N` column replaces the tail beginning at the fit end with the fitted line, clipped at zero. Impulse integrates this analysis curve from the original onset to the exact fractional-sample 3% endpoint, and average thrust uses the same interval. The original last-crossing end and impulse remain in the quality JSON for traceability. Plots retain the measured tail and show the extrapolation separately.
+
+No fitting window means the original threshold method is unchanged. Fit settings and results are in `thrust.tail_extrapolation` in the machine-readable output. These are estimated burnout results; the method does not establish the physical cause of the measured tail or recover missing logger timestamps.

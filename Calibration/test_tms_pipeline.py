@@ -64,6 +64,36 @@ class RecordingTests(unittest.TestCase):
         self.assertTrue((data['pressure_adc'] == 32767).all())
         self.assertNotIn('Peak pressure: 0.000', (self.root / 'test_executive_report.txt').read_text())
 
+    def test_decay_fit_excludes_false_tail_and_integrates_fractional_endpoint(self):
+        time = np.arange(4800) / 320
+        force = np.where(time < 2, 0., np.where(time < 3, 100., np.maximum(0., 100 * (4-time))))
+        force[time >= 3.8] = 20.
+        original = force.copy()
+        legacy = pipeline.calculate_thrust_metrics(time, force)
+        result = pipeline.calculate_thrust_metrics(time, force, burnout_fit_window=(3.3, 3.7))
+        self.assertEqual(legacy['burnout_time'], time[-1])
+        self.assertAlmostEqual(result['burnout_time'], 3.97, places=10)
+        self.assertAlmostEqual(result['burn_time'], 1.97, places=10)
+        self.assertAlmostEqual(result['total_impulse'], 149.955, places=8)
+        self.assertAlmostEqual(result['avg_thrust'], 149.955 / 1.97, places=8)
+        self.assertAlmostEqual(result['tail_extrapolation']['zero_crossing_s'], 4., places=10)
+        np.testing.assert_array_equal(force, original)
+        analysis = pipeline.apply_burnout_tail(time, force, result['tail_extrapolation'])
+        np.testing.assert_array_equal(analysis[time < 3.7], original[time < 3.7])
+        self.assertTrue((analysis[time >= 4] == 0).all())
+
+    def test_flat_tail_cannot_be_used_as_a_decay_fit(self):
+        time = np.arange(1600) / 320
+        force = np.where((time >= 1) & (time < 2), 100., 20.)
+        with self.assertRaisesRegex(ValueError, 'descending line'):
+            pipeline.calculate_thrust_metrics(time, force, burnout_fit_window=(3., 3.5))
+
+    def test_decay_fit_must_follow_peak(self):
+        time = np.arange(1600) / 320
+        force = np.where((time >= 1) & (time < 2), 100., 0.)
+        with self.assertRaisesRegex(ValueError, 'follow peak'):
+            pipeline.calculate_thrust_metrics(time, force, burnout_fit_window=(.1, .5))
+
 
 if __name__ == '__main__':
     unittest.main()
