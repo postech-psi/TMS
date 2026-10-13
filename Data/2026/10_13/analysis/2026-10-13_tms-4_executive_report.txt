@@ -8,24 +8,32 @@ Sampling rate: 320 sps
 ------------------------------------------------------------------------
 DATA QUALITY
 ------------------------------------------------------------------------
-Thrust status: provisional
+Thrust status: estimated_burnout
 Pressure status: invalid_saturated
 Time axis assumes uniform 320 Hz sampling; no per-sample timestamps are logged.
 Ignition delay is time from recording start, not an independently logged fire command.
 Calibration is inherited from the existing pipeline; no same-day calibration was supplied.
 Pressure metrics withheld: raw ADC is clipped or stuck.
-Post-event baseline is at least half the 3% thrust threshold; burn end, average thrust, and impulse are provisional.
-Last threshold crossing is at the end of the recording; burn duration is not validated.
+Burn end is estimated from the selected pre-tail decay; measured force is retained separately from the analysis curve.
 
 ------------------------------------------------------------------------
 THRUST METRICS
 ------------------------------------------------------------------------
-PROVISIONAL: baseline shift contaminates the 3% end threshold and integration window.
 Ignition delay: 7321.9 ms
 Peak thrust: 166.01 N
-Total impulse: 370.22 N s
-Average thrust: 54.82 N
-Burn duration: 6753.1 ms
+Total impulse: 336.53 N s
+Average thrust: 122.36 N
+Burn duration: 2750.3 ms
+
+------------------------------------------------------------------------
+BURNOUT EXTRAPOLATION
+------------------------------------------------------------------------
+Fit window: 9.650000 to 9.850000 s (65 samples)
+Decay slope: -221.769629 N/s; R^2: 0.991607
+Estimated 3% burn end: 10.072218 s
+Extrapolated zero crossing: 10.094675 s
+Impulse integrates the measured curve before the fit end and the extrapolated tail up to the 3% crossing.
+Original ADC and filtered force are retained; analysis_force_N contains the modeled tail.
 
 ------------------------------------------------------------------------
 PRESSURE METRICS

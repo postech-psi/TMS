@@ -48,9 +48,9 @@
   "october": {
     "input_file": "TMS/Data/2026/10_13/TMS_4.TXT",
     "input_sha256": "1f471cdbf13943edb4db9337e90ee4f0498aaea551d4c1f9cf8fc9d12b4e1b24",
-    "pipeline_sha256": "18b49b559aab2425498b4ef840841fc28bb6d8fa9e7e47af78b5489da236c21e",
+    "pipeline_sha256": "2431541dce4cef1e89d1d20c3302314c8a4a841cc261fa233d1ef75221f63209",
     "pipeline_revision": {
-      "code_commit": "7ebf8ec9f1725619d1d1ff75c37109e3514c5047",
+      "code_commit": "3cb9efb9c3d2530ef30778036a3ccae50695ffc6",
       "working_tree_modified": false
     },
     "sampling_start_us": 677895304,
@@ -67,7 +67,7 @@
       "same_day_calibration_supplied": false
     },
     "quality": {
-      "thrust_status": "provisional",
+      "thrust_status": "estimated_burnout",
       "event_detected": true,
       "loadcell_clipped_samples": 0,
       "pressure_status": "invalid_saturated",
@@ -78,12 +78,13 @@
       "event_gate_duration_s": 0.1,
       "warnings": [
         "Pressure metrics withheld: raw ADC is clipped or stuck.",
-        "Post-event baseline is at least half the 3% thrust threshold; burn end, average thrust, and impulse are provisional.",
-        "Last threshold crossing is at the end of the recording; burn duration is not validated."
+        "Burn end is estimated from the selected pre-tail decay; measured force is retained separately from the analysis curve."
       ],
       "tail_mean_N": 4.961337125461183,
       "tail_std_N": 0.15725957870264254,
-      "burn_end_censored": true
+      "burnout_method": "linear_extrapolation_to_3_percent",
+      "measured_burn_end_censored": true,
+      "burn_end_censored": false
     },
     "thrust": {
       "peak_thrust": 166.0133149580275,
@@ -91,14 +92,31 @@
       "peak_idx": 2695,
       "ignition_idx": 2343,
       "ignition_time": 7.321875,
-      "burnout_idx": 4504,
-      "burnout_time": 14.075,
-      "burn_time": 6.753124999999999,
+      "burnout_idx": 3223,
+      "burnout_time": 10.072217778413007,
+      "burn_time": 2.750342778413007,
       "ignition_delay": 7.321875,
-      "total_impulse": 370.2159968290365,
-      "avg_thrust": 54.82143405150009,
+      "total_impulse": 336.52749977854313,
+      "avg_thrust": 122.35838471476819,
       "specific_impulse": null,
-      "threshold_force": 4.980399448740825
+      "threshold_force": 4.980399448740825,
+      "measured_threshold_burnout_time": 14.075,
+      "measured_threshold_total_impulse": 370.2159968290365,
+      "tail_extrapolation": {
+        "method": "linear_extrapolation_to_3_percent",
+        "requested_window_s": [
+          9.65,
+          9.85
+        ],
+        "fit_start_s": 9.65,
+        "fit_end_s": 9.85,
+        "sample_count": 65,
+        "slope_N_per_s": -221.76962914110638,
+        "intercept_N": 2238.6924007958514,
+        "r_squared": 0.9916067347745895,
+        "threshold_crossing_s": 10.072217778413007,
+        "zero_crossing_s": 10.094675314496866
+      }
     },
     "pressure": {
       "peak_pressure": null,
@@ -113,5 +131,20 @@
     "impulse_Ns": 348.21673845176633,
     "duration_s": 3.421875
   },
-  "warning": "Different motor/setup details and same-day calibration are unavailable. Similarity does not validate performance."
+  "warning": "Different motor/setup details and same-day calibration are unavailable. Similarity does not validate performance.",
+  "burnout_extrapolation": {
+    "method": "linear_extrapolation_to_3_percent",
+    "requested_window_s": [
+      9.65,
+      9.85
+    ],
+    "fit_start_s": 9.65,
+    "fit_end_s": 9.85,
+    "sample_count": 65,
+    "slope_N_per_s": -221.76962914110638,
+    "intercept_N": 2238.6924007958514,
+    "r_squared": 0.9916067347745895,
+    "threshold_crossing_s": 10.072217778413007,
+    "zero_crossing_s": 10.094675314496866
+  }
 }

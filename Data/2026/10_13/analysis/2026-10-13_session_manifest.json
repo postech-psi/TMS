@@ -4,14 +4,22 @@
   "pipeline": {
     "repository": "https://github.com/postech-psi/TMS",
     "path": "Calibration/tms_data_pipeline.py",
-    "sha256": "18b49b559aab2425498b4ef840841fc28bb6d8fa9e7e47af78b5489da236c21e",
-    "code_commit": "7ebf8ec9f1725619d1d1ff75c37109e3514c5047",
+    "sha256": "2431541dce4cef1e89d1d20c3302314c8a4a841cc261fa233d1ef75221f63209",
+    "code_commit": "3cb9efb9c3d2530ef30778036a3ccae50695ffc6",
     "base_commit": "abb02a09bca4e7835425dc67b2c28234ef887992",
     "working_tree_modified": false,
     "numpy": "2.5.4",
     "scipy": "1.18.1",
     "matplotlib": "3.11.2",
-    "method": "Corrected two-header-line loader, inherited calibration, nominal 320 Hz, horizontal baseline, 20 Hz/order 2 force filter; raw pressure validity gate."
+    "method": "Corrected header loader, inherited calibration, nominal 320 Hz, horizontal baseline, 20 Hz/order 2 force filter. TMS_4 tail extrapolated from 9.65\u20139.85 s to the 3% threshold; measured force retained separately.",
+    "processing_options_by_recording": {
+      "TMS_4.TXT": {
+        "burnout_fit_window_s": [
+          9.65,
+          9.85
+        ]
+      }
+    }
   },
   "recordings": [
     {
@@ -77,7 +85,7 @@
       "nominal_coverage_s": 14.078125,
       "sampling_start_us": 677895304,
       "power_on_us": 525348,
-      "thrust_status": "provisional",
+      "thrust_status": "estimated_burnout",
       "quality_path": "tests/2026-10-13/files/2026-10-13_tms-4_quality.json"
     },
     {
