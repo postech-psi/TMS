@@ -773,13 +773,12 @@ def plot_quality_diagnostics(time, corrected, filtered, pressure_adc, quality, m
                 ax.axhline(metrics["threshold_force"], color=THRESHOLD_COLOR, linestyle="--", label="3% threshold")
             if kind == "combined":
                 ax.text(.02, .96, "Pressure unavailable: raw ADC clipped/stuck", transform=ax.transAxes, va="top", color=PRESSURE_FILTERED_COLOR)
-        ax.set_title(f"{INPUT_FILENAME} | {quality['thrust_status']} thrust | {quality['pressure_status']} pressure")
+        title = {"loadcell": "Loadcell Graph", "barometer": "Barometer Graph", "combined": "Loadcell + Barometer Graph"}[kind]
+        ax.set_title(f"{title} - {INPUT_FILENAME}")
         ax.set_xlabel("Time from recording start (s), nominal 320 Hz")
         ax.set_xlim(time[0], time[-1])
         ax.grid(alpha=.25)
         ax.legend(loc="upper right")
-        if quality["thrust_status"] == "provisional" and kind != "barometer":
-            ax.text(.02, .04, "Post-event offset affects burn end and impulse; see quality report", transform=ax.transAxes)
         fig.tight_layout()
         save_current_figure(f"{kind}_plot.png")
         plt.close(fig)
