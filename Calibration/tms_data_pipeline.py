@@ -367,7 +367,7 @@ def format_project_relative_path(path: str | Path) -> str:
         relative_path = path.relative_to(PROJECT_ROOT)
     except ValueError:
         return str(path)
-    return str(Path(PROJECT_ROOT.name) / relative_path)
+    return (Path(PROJECT_ROOT.name) / relative_path).as_posix()
 
 
 def write_report_section(file, title: str, lines: list[str]) -> None:
