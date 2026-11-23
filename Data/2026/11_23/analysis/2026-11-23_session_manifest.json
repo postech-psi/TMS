@@ -19,8 +19,8 @@
   },
   "joint_analysis": {
     "path": "Calibration/tms_split_recording.py",
-    "sha256": "9235e24595228b0d491948c3c441455cc12359c694e39eeb5598deadc5b850fc",
-    "code_commit": "0cc11df36316f97a9793488e5af05ca5ef0c80e5",
+    "sha256": "55582adcb861b56c5e9c56bd2a98cb691c987e25b5691ed24d8d613fb83385db",
+    "code_commit": "8c7e10a287aa5f23b1ba8867706ac4580b1edf43",
     "templates": [
       "Data/2026/4_2/analysis/26.04.03 data_pipeline_data.txt",
       "Data/2026/4_8/analysis/2026.04.08 data_pipeline_data.txt",
@@ -39,6 +39,7 @@
     "outputs": [
       "2026-11-23_tms-2-3_joint.json",
       "2026-11-23_tms-2-3_pipeline_data.txt",
+      "2026-11-23_tms-2-3_executive_report.txt",
       "2026-11-23_tms-2-3_loadcell_plot.png",
       "2026-11-23_tms-2-3_barometer_plot.png",
       "2026-11-23_tms-2-3_combined_plot.png"

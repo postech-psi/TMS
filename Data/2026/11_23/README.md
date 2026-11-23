@@ -19,7 +19,7 @@ Times are from the start of `TMS_2` at a nominal 320 Hz. Measured impulse alone 
 
 | Record | Files |
 |---|---|
-| Whole firing (`TMS_2` + `TMS_3`) | [Loadcell](./analysis/2026-11-23_tms-2-3_loadcell_plot.png) · [Pressure](./analysis/2026-11-23_tms-2-3_barometer_plot.png) · [Combined](./analysis/2026-11-23_tms-2-3_combined_plot.png) · [TSV](./analysis/2026-11-23_tms-2-3_pipeline_data.txt) · [Fit and metrics](./analysis/2026-11-23_tms-2-3_joint.json) |
+| Whole firing (`TMS_2` + `TMS_3`) | [Report](./analysis/2026-11-23_tms-2-3_executive_report.txt) · [Loadcell](./analysis/2026-11-23_tms-2-3_loadcell_plot.png) · [Pressure](./analysis/2026-11-23_tms-2-3_barometer_plot.png) · [Combined](./analysis/2026-11-23_tms-2-3_combined_plot.png) · [TSV](./analysis/2026-11-23_tms-2-3_pipeline_data.txt) · [Fit and metrics](./analysis/2026-11-23_tms-2-3_joint.json) |
 | `TMS_2.TXT` alone | [Raw](./TMS_2.TXT) · [Report](./analysis/2026-11-23_tms-2_executive_report.txt) · [TSV](./analysis/2026-11-23_tms-2_pipeline_data.txt) · [Quality](./analysis/2026-11-23_tms-2_quality.json) · [Combined](./analysis/2026-11-23_tms-2_combined_plot.png) · [Loadcell](./analysis/2026-11-23_tms-2_loadcell_plot.png) · [Pressure](./analysis/2026-11-23_tms-2_barometer_plot.png) |
 | `TMS_3.TXT` alone | [Raw](./TMS_3.TXT) · [Report](./analysis/2026-11-23_tms-3_executive_report.txt) · [TSV](./analysis/2026-11-23_tms-3_pipeline_data.txt) · [Quality](./analysis/2026-11-23_tms-3_quality.json) · [Combined](./analysis/2026-11-23_tms-3_combined_plot.png) · [Loadcell](./analysis/2026-11-23_tms-3_loadcell_plot.png) · [Pressure](./analysis/2026-11-23_tms-3_barometer_plot.png) |
 
@@ -59,7 +59,7 @@ This session differs from earlier ones in three ways: the firing spans two files
 
 ## Reproduce
 
-Pipeline commit `0604925` (fixed 5 N threshold); joint analysis `Calibration/tms_split_recording.py` at commit `0cc11df`.
+Pipeline commit `0604925` (fixed 5 N threshold); joint analysis `Calibration/tms_split_recording.py` at commit `8c7e10a`.
 
 ```sh
 python Calibration/tms_data_pipeline.py --input Data/2026/11_23/TMS_2.TXT --prefix 2026-11-23_tms-2 --no-show --dpi 180

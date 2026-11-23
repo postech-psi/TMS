@@ -1,0 +1,66 @@
+========================================================================
+STATIC FIRE REPORT - BURN SPLIT ACROSS TWO RECORDINGS
+========================================================================
+
+Input files: TMS/Data/2026/11_23/TMS_2.TXT + TMS/Data/2026/11_23/TMS_3.TXT
+Sampling rate: 320 sps
+
+------------------------------------------------------------------------
+DATA QUALITY
+------------------------------------------------------------------------
+Thrust status: measured with a fitted unsampled interval (historical_template_median)
+Pressure status: unverified_does_not_track_thrust
+Time axis assumes uniform 320 Hz sampling; no per-sample timestamps are logged.
+Second file aligned by sampling-start headers: offset 15.519536 s.
+Unsampled interval: 14.737500 to 15.519536 s (0.782036 s).
+Ignition delay is time from the first recording's start, not an independently logged fire command.
+Calibration is inherited from the existing pipeline; no same-day calibration was supplied.
+
+------------------------------------------------------------------------
+THRUST METRICS
+------------------------------------------------------------------------
+Ignition delay: 12771.9 ms
+Peak thrust (measured): 149.17 N at 14.512500 s
+Total impulse (estimated): 360.73 N s (range 356.43-363.10)
+  Measured: 250.92 N s (first file 210.70, second file 40.22)
+  Fitted interval: 109.81 N s (range 105.51-112.18)
+Average thrust (estimated): 104.54 N
+Burn duration: 3450.8 ms (12.771875 to 16.222661 s)
+
+------------------------------------------------------------------------
+UNSAMPLED INTERVAL FIT
+------------------------------------------------------------------------
+Templates: earlier firings fitted to the last 1.0 s before the gap and the measured decay; pinned to both edges.
+Edge force: 146.30 N / 116.84 N
+Accepted (RMS <= 6.0 N): 4_2 (5.63 N), 4_8 (3.48 N), 5_28 (5.63 N), 10_13 (5.70 N)
+Rejected: 7_16 (9.74 N), 7_23 (6.96 N), 7_24 (16.85 N)
+Knee-fit cross-check total: 360.50 N s; straight-bridge gap impulse: 102.89 N s
+Measured impulse alone is a lower bound for non-negative thrust.
+
+------------------------------------------------------------------------
+PRESSURE METRICS
+------------------------------------------------------------------------
+Drift-corrected peak: 10.169 bar at 13.353125 s (thrust 95.3 N)
+Correlation with thrust during burn: r = 0.34 (minimum for use 0.50)
+Thrust-free residual: 0.535 bar RMS
+After drift removal the in-burn signal peaks before thrust reaches its plateau and then falls while thrust is still rising; chamber pressure cannot do that. Values are retained for diagnosis, not as chamber pressure.
+
+------------------------------------------------------------------------
+CALIBRATION
+------------------------------------------------------------------------
+Loadcell calibration slope: -0.039100 kg/ADC
+Loadcell calibration intercept: -193.0049 kg
+Loadcell calibration R^2: 0.999948
+Pressure conversion: y = 0.0027x -0.11
+
+------------------------------------------------------------------------
+DATA PROCESSING
+------------------------------------------------------------------------
+Loadcell threshold (fixed absolute): 5.00 N
+Loadcell baseline offset: -60.100961 N (first file, up to 6.387500 s), applied to both files
+Return to baseline in second file: -0.558 +/- 0.180 N
+Loadcell filter: Butterworth low-pass 20.0 Hz, order 2; each file separately
+Pressure: 0.10 s running median on raw ADC, inherited conversion, then a PCHIP baseline through 0.5 s medians of thrust-free periods (zero gauge pressure assumed there) is subtracted.
+filtered_force_N is measured only (nan in the gap); analysis_force_N includes the fitted interval.
+
+========================================================================

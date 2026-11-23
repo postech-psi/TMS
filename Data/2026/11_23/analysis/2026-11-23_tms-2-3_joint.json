@@ -1,7 +1,7 @@
 {
   "method": {
     "script": "Calibration/tms_split_recording.py",
-    "script_sha256": "9235e24595228b0d491948c3c441455cc12359c694e39eeb5598deadc5b850fc",
+    "script_sha256": "55582adcb861b56c5e9c56bd2a98cb691c987e25b5691ed24d8d613fb83385db",
     "pipeline_sha256": "abcc8ee25013fcdd722271efac2ef6caffd60f6388b8d8bb22db6068bd4b16c9",
     "pipeline_revision": {
       "code_commit": "0604925b9b6c30f5d4a5ac0b6d7a41720dd7f58e",
@@ -221,5 +221,6 @@
     "2026-11-23_tms-2-3_barometer_plot.png",
     "2026-11-23_tms-2-3_combined_plot.png"
   ],
-  "series": "2026-11-23_tms-2-3_pipeline_data.txt"
+  "series": "2026-11-23_tms-2-3_pipeline_data.txt",
+  "report": "2026-11-23_tms-2-3_executive_report.txt"
 }
