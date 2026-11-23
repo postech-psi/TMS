@@ -14,8 +14,10 @@ into the next file with an unsampled interval between them. This script:
 * draws the session with the pipeline's standard loadcell, barometer and combined plots.
 
 Gap model: earlier firings' thrust curves (--templates) are fitted to the force next
-to the gap; the median accepted fill is the estimate. Fallback ("knee fit"): the end-of-file trend of the first recording (slope from a
-least-squares line over EDGE_FIT_S) is continued until it meets the decay line
+to the gap; the median accepted fill is the estimate. Edge level and slope at both sides of the gap come from a quadratic least-squares fit to
+the unfiltered corrected force over EDGE_FIT_S, not from the last filtered sample, which
+the zero-phase filter's end behaviour pulls toward the final few raw values.
+Fallback ("knee fit"): the end-of-file trend of the first recording is continued until it meets the decay line
 projected back from the start of the second recording; the corner is rounded with a
 soft minimum. Both edge values are matched. A straight bridge and the range spanned
 by the two boundary values are kept for comparison.
@@ -50,7 +52,7 @@ def load(path: Path) -> dict:
     return rec
 
 
-EDGE_FIT_S = 0.1
+EDGE_FIT_S = 0.25
 SOFT_CORNER_N = 3.0
 TEMPLATE_FIT_BEFORE_GAP_S = 1.0  # templates are fitted to the force next to the gap, not the rise
 PRESSURE_DESPIKE_S = 0.1
@@ -59,10 +61,14 @@ PRESSURE_BURN_MARGIN_S = (0.1, 0.3)
 PRESSURE_MIN_THRUST_CORRELATION = 0.5
 
 
-def edge_slope(values: np.ndarray, fs: int, at_end: bool) -> float:
-    count = max(4, int(round(EDGE_FIT_S * fs)))
+def edge_state(values: np.ndarray, fs: int, at_end: bool) -> tuple[float, float]:
+    """Level and slope at the recording edge from a quadratic fit to unfiltered force."""
+    count = max(6, int(round(EDGE_FIT_S * fs)))
     segment = values[-count:] if at_end else values[:count]
-    return float(np.polyfit(np.arange(segment.size) / fs, segment, 1)[0])
+    x = np.arange(segment.size) / fs
+    x_edge = x[-1] if at_end else x[0]
+    poly = np.polyfit(x, segment, 2)
+    return float(np.polyval(poly, x_edge)), float(np.polyval(np.polyder(poly), x_edge))
 
 
 def knee_fit(tau: np.ndarray, gap: float, y0: float, s0: float, y1: float, s1: float) -> np.ndarray:
@@ -147,13 +153,13 @@ def analyze(first_path: Path, second_path: Path, output_dir: Path, prefix: str, 
 
     measured_a = float(np.trapezoid(f_a[onset_idx:], dx=dt))
     measured_b = float(np.trapezoid(f_b[:end_idx + 1], dx=dt)) if end_idx is not None else 0.0
-    boundary = (float(f_a[-1]), float(f_b[0]))
+    (edge_a, slope_a), (edge_b, slope_b) = edge_state(raw_a - offset_n, fs, True), edge_state(raw_b - offset_n, fs, False)
+    boundary = (edge_a, edge_b)
     bridge_linear = 0.5 * (boundary[0] + boundary[1]) * gap_s
     bridge_range = (min(boundary) * gap_s, max(boundary) * gap_s)
     measured_total = measured_a + measured_b
     end_time = float(t_b[end_idx]) if end_idx is not None else None
     duration = end_time - float(t_a[onset_idx]) if end_time is not None else None
-    slope_a, slope_b = edge_slope(f_a, fs, True), edge_slope(f_b, fs, False)
     tau = np.arange(1, int(np.floor(gap_s * fs)) + 1) / fs
     tau = tau[tau < gap_s]
     t_gap = t_a[-1] + tau
@@ -258,7 +264,9 @@ def analyze(first_path: Path, second_path: Path, output_dir: Path, prefix: str, 
             "end_s": end_time,
             "peak_n": peak_n,
             "peak_s": peak_s,
-            "boundary_force_n": {"first_file_last": boundary[0], "second_file_first": boundary[1]},
+            "boundary_force_n": {"first_file_last": boundary[0], "second_file_first": boundary[1],
+                                 "method": f"quadratic fit to unfiltered corrected force over {EDGE_FIT_S:.2f} s at each edge",
+                                 "filtered_edge_samples_n": [float(f_a[-1]), float(f_b[0])]},
             "impulse_first_file_n_s": measured_a,
             "impulse_second_file_n_s": measured_b,
             "impulse_measured_n_s": measured_total,
