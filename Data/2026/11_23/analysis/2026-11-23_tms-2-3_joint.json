@@ -1,7 +1,7 @@
 {
   "method": {
     "script": "Calibration/tms_split_recording.py",
-    "script_sha256": "55582adcb861b56c5e9c56bd2a98cb691c987e25b5691ed24d8d613fb83385db",
+    "script_sha256": "0ae2c0bd623048dd166242c836f073067348d09757369e73c87bc9125e910270",
     "pipeline_sha256": "abcc8ee25013fcdd722271efac2ef6caffd60f6388b8d8bb22db6068bd4b16c9",
     "pipeline_revision": {
       "code_commit": "0604925b9b6c30f5d4a5ac0b6d7a41720dd7f58e",
@@ -63,8 +63,13 @@
     "peak_n": 149.16857536799006,
     "peak_s": 14.5125,
     "boundary_force_n": {
-      "first_file_last": 146.3041273320785,
-      "second_file_first": 116.83954072407035
+      "first_file_last": 147.83280214442743,
+      "second_file_first": 116.44071186308587,
+      "method": "quadratic fit to unfiltered corrected force over 0.25 s at each edge",
+      "filtered_edge_samples_n": [
+        146.3041273320785,
+        116.83954072407035
+      ]
     },
     "impulse_first_file_n_s": 210.6956049306418,
     "impulse_second_file_n_s": 40.224630339762044,
@@ -72,12 +77,12 @@
   },
   "estimated": {
     "gap_model": "historical_template_median",
-    "gap_impulse_n_s": 109.81369139583907,
+    "gap_impulse_n_s": 110.25548150004971,
     "gap_impulse_template_range_n_s": [
-      105.51428646633676,
-      112.18435450998874
+      105.95607657054738,
+      112.62614461419936
     ],
-    "gap_max_n": 147.2412581730532,
+    "gap_max_n": 148.2470604357688,
     "template_fit_window_before_gap_s": 1.0,
     "template_acceptance_rmse_n": 6.0,
     "templates": [
@@ -88,11 +93,11 @@
         "stretch": 1.0943211576454677,
         "rmse_n": 5.626064123800692,
         "edge_correction_n": [
-          -0.6626103270226338,
-          9.256387355333715
+          0.8660644853262909,
+          8.857558494349234
         ],
-        "gap_impulse_n_s": 109.81003449416619,
-        "gap_max_n": 149.28853760774976,
+        "gap_impulse_n_s": 110.2518245983768,
+        "gap_max_n": 150.0201581877349,
         "accepted": true
       },
       {
@@ -102,11 +107,11 @@
         "stretch": 1.160660249565944,
         "rmse_n": 3.4843809196833564,
         "edge_correction_n": [
-          -3.0180477088942723,
-          8.610683955723601
+          -1.4893728965453477,
+          8.211855094739121
         ],
-        "gap_impulse_n_s": 112.18435450998874,
-        "gap_max_n": 152.17220168068906,
+        "gap_impulse_n_s": 112.62614461419936,
+        "gap_max_n": 152.65336837171532,
         "accepted": true
       },
       {
@@ -116,11 +121,11 @@
         "stretch": 1.1882690962907236,
         "rmse_n": 5.629492079877136,
         "edge_correction_n": [
-          0.979267983260371,
-          0.15518841180679033
+          2.5079427956092957,
+          -0.2436404491776898
         ],
-        "gap_impulse_n_s": 110.20179811797145,
-        "gap_max_n": 146.52535685365203,
+        "gap_impulse_n_s": 110.64358822218207,
+        "gap_max_n": 147.83280214442743,
         "accepted": true
       },
       {
@@ -130,11 +135,11 @@
         "stretch": 1.3843875388774607,
         "rmse_n": 9.735894848860106,
         "edge_correction_n": [
-          -1.7643420413012052,
-          21.19313573185059
+          -0.23566722895228054,
+          20.79430687086611
         ],
-        "gap_impulse_n_s": 107.20936835515916,
-        "gap_max_n": 148.30565966949132,
+        "gap_impulse_n_s": 107.65115845936978,
+        "gap_max_n": 149.4338166707463,
         "accepted": false
       },
       {
@@ -144,11 +149,11 @@
         "stretch": 1.9839498083951717,
         "rmse_n": 6.962939775575778,
         "edge_correction_n": [
-          3.3429227827175225,
-          -4.16398016288548
+          4.871597595066447,
+          -4.56280902386996
         ],
-        "gap_impulse_n_s": 107.865975527769,
-        "gap_max_n": 146.3041273320785,
+        "gap_impulse_n_s": 108.30776563197962,
+        "gap_max_n": 147.83280214442743,
         "accepted": false
       },
       {
@@ -158,11 +163,11 @@
         "stretch": 1.5546785831829784,
         "rmse_n": 16.849305806993936,
         "edge_correction_n": [
-          7.279900075334524,
-          -7.3869164509664245
+          8.808574887683449,
+          -7.785745311950905
         ],
-        "gap_impulse_n_s": 104.88577286678552,
-        "gap_max_n": 146.35142937280114,
+        "gap_impulse_n_s": 105.32756297099615,
+        "gap_max_n": 147.86469965395415,
         "accepted": false
       },
       {
@@ -172,35 +177,35 @@
         "stretch": 0.9944653422994023,
         "rmse_n": 5.695391947454819,
         "edge_correction_n": [
-          -0.021222042410755648,
-          12.514180442453053
+          1.507452769938169,
+          12.115351581468573
         ],
-        "gap_impulse_n_s": 105.51428646633676,
-        "gap_max_n": 146.74767785065202,
+        "gap_impulse_n_s": 105.95607657054738,
+        "gap_max_n": 148.19235547881814,
         "accepted": true
       }
     ],
     "knee_fit": {
-      "edge_fit_window_s": 0.1,
-      "edge_slope_first_file_end_n_per_s": -11.766344118165442,
-      "edge_slope_second_file_start_n_per_s": -189.39653542814204,
-      "knee_after_gap_start_s": 0.6679625884375789,
-      "gap_impulse_n_s": 109.57790639413292,
-      "gap_max_n": 146.3041273320785,
-      "total_impulse_n_s": 360.4981416645368
+      "edge_fit_window_s": 0.25,
+      "edge_slope_first_file_end_n_per_s": -11.605598036039396,
+      "edge_slope_second_file_start_n_per_s": -144.3552254195252,
+      "knee_after_gap_start_s": 0.6139293525051412,
+      "gap_impulse_n_s": 110.07436504259609,
+      "gap_max_n": 147.83280214442743,
+      "total_impulse_n_s": 360.9946003129999
     },
-    "straight_bridge_gap_impulse_n_s": 102.89391079597917,
+    "straight_bridge_gap_impulse_n_s": 103.3357009001898,
     "boundary_value_gap_impulse_range_n_s": [
-      91.37272706968905,
-      114.41509452226931
+      91.06082854256019,
+      115.61057325781941
     ],
-    "total_impulse_n_s": 360.73392666624295,
+    "total_impulse_n_s": 361.17571677045356,
     "total_impulse_range_n_s": [
-      356.43452173674063,
-      363.1045897803926
+      356.87631184095125,
+      363.5463798846032
     ],
     "burn_duration_s": 3.4507860000000026,
-    "average_thrust_n": 104.53674225705178,
+    "average_thrust_n": 104.66476819207372,
     "assumption": "Earlier firings' peak-normalized thrust curves are fitted (amplitude, time shift, time stretch) to the force next to the gap and pinned to both gap edges; the median accepted fill is the central value and the spread across accepted templates is the range. The knee fit (first file's end trend continued until it meets the second file's initial decay) and a straight bridge are kept for comparison. Measured impulse alone is a lower bound for non-negative thrust."
   },
   "pressure": {

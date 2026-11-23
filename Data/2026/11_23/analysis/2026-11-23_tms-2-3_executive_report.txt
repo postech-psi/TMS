@@ -21,20 +21,20 @@ THRUST METRICS
 ------------------------------------------------------------------------
 Ignition delay: 12771.9 ms
 Peak thrust (measured): 149.17 N at 14.512500 s
-Total impulse (estimated): 360.73 N s (range 356.43-363.10)
+Total impulse (estimated): 361.18 N s (range 356.88-363.55)
   Measured: 250.92 N s (first file 210.70, second file 40.22)
-  Fitted interval: 109.81 N s (range 105.51-112.18)
-Average thrust (estimated): 104.54 N
+  Fitted interval: 110.26 N s (range 105.96-112.63)
+Average thrust (estimated): 104.66 N
 Burn duration: 3450.8 ms (12.771875 to 16.222661 s)
 
 ------------------------------------------------------------------------
 UNSAMPLED INTERVAL FIT
 ------------------------------------------------------------------------
 Templates: earlier firings fitted to the last 1.0 s before the gap and the measured decay; pinned to both edges.
-Edge force: 146.30 N / 116.84 N
+Edge force: 147.83 N / 116.44 N
 Accepted (RMS <= 6.0 N): 4_2 (5.63 N), 4_8 (3.48 N), 5_28 (5.63 N), 10_13 (5.70 N)
 Rejected: 7_16 (9.74 N), 7_23 (6.96 N), 7_24 (16.85 N)
-Knee-fit cross-check total: 360.50 N s; straight-bridge gap impulse: 102.89 N s
+Knee-fit cross-check total: 360.99 N s; straight-bridge gap impulse: 103.34 N s
 Measured impulse alone is a lower bound for non-negative thrust.
 
 ------------------------------------------------------------------------
