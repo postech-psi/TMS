@@ -26,8 +26,8 @@
       "Data/2026/4_8/analysis/2026.04.08 data_pipeline_data.txt",
       "Data/2026/5_28/analysis/2026.05.28 data_pipeline_data.txt",
       "Data/2026/7_16/analysis/2026.07.16 data_pipeline_data.txt",
-      "Data/2026/7_23/analysis/TMS_7_pipeline_data.txt",
-      "Data/2026/7_24/analysis/TMS_5_pipeline_data.txt",
+      "Data/2026/7_23/analysis/2026-07-23_tms-7_pipeline_data.txt",
+      "Data/2026/7_24/analysis/2026-07-24_tms-5_pipeline_data.txt",
       "Data/2026/10_13/analysis/2026-10-13_tms-4_pipeline_data.txt"
     ],
     "accepted_templates": [

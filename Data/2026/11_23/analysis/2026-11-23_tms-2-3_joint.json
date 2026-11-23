@@ -143,31 +143,31 @@
         "accepted": false
       },
       {
-        "template": "Data/2026/7_23/analysis/TMS_7_pipeline_data.txt",
-        "amplitude_n": 143.701698657631,
-        "shift_s": -1.9999999999999998,
-        "stretch": 1.9839498083951717,
-        "rmse_n": 6.962939775575778,
+        "template": "Data/2026/7_23/analysis/2026-07-23_tms-7_pipeline_data.txt",
+        "amplitude_n": 143.70173121093617,
+        "shift_s": -1.999999999999999,
+        "stretch": 1.9839492311852416,
+        "rmse_n": 6.962796622885099,
         "edge_correction_n": [
-          4.871597595066447,
-          -4.56280902386996
+          4.871547891754801,
+          -4.5627567964832565
         ],
-        "gap_impulse_n_s": 108.30776563197962,
+        "gap_impulse_n_s": 108.30779864160779,
         "gap_max_n": 147.83280214442743,
         "accepted": false
       },
       {
-        "template": "Data/2026/7_24/analysis/TMS_5_pipeline_data.txt",
-        "amplitude_n": 140.36147159154865,
-        "shift_s": -1.9999999999920408,
-        "stretch": 1.5546785831829784,
-        "rmse_n": 16.849305806993936,
+        "template": "Data/2026/7_24/analysis/2026-07-24_tms-5_pipeline_data.txt",
+        "amplitude_n": 140.36151335895616,
+        "shift_s": -1.999999999993946,
+        "stretch": 1.5546781939218242,
+        "rmse_n": 16.849057771665173,
         "edge_correction_n": [
-          8.808574887683449,
-          -7.785745311950905
+          8.808495659384391,
+          -7.785788035833633
         ],
-        "gap_impulse_n_s": 105.32756297099615,
-        "gap_max_n": 147.86469965395415,
+        "gap_impulse_n_s": 105.32756144386937,
+        "gap_max_n": 147.8646914309379,
         "accepted": false
       },
       {

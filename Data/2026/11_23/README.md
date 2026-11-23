@@ -55,7 +55,6 @@ This session differs from earlier ones in three ways: the firing spans two files
 
 - The logger records no per-sample timestamps. If the real rate is below 320 Hz, each file covers more time, the gap is shorter, and the fitted share of the impulse shrinks.
 - The fitted interval assumes this motor follows the plateau-then-decay shape of earlier firings. It cannot reveal events confined to the gap.
-- The 2026-07-23 and 2026-07-24 template files are not yet committed to this repository; both were rejected and do not affect the result.
 - The command-to-ignition delay was not logged; the 12.77 s onset is measured from the start of the recording.
 - Calibration is inherited from the existing pipeline; no same-day calibration was supplied.
 
@@ -66,5 +65,5 @@ Pipeline commit `0604925` (fixed 5 N threshold); joint analysis `Calibration/tms
 ```sh
 python Calibration/tms_data_pipeline.py --input Data/2026/11_23/TMS_2.TXT --prefix 2026-11-23_tms-2 --no-show --dpi 180
 python Calibration/tms_data_pipeline.py --input Data/2026/11_23/TMS_3.TXT --prefix 2026-11-23_tms-3 --no-show --dpi 180
-python Calibration/tms_split_recording.py Data/2026/11_23/TMS_2.TXT Data/2026/11_23/TMS_3.TXT --prefix 2026-11-23_tms-2-3 --templates Data/2026/4_2/analysis/26.04.03 data_pipeline_data.txt Data/2026/4_8/analysis/2026.04.08 data_pipeline_data.txt Data/2026/5_28/analysis/2026.05.28 data_pipeline_data.txt Data/2026/7_16/analysis/2026.07.16 data_pipeline_data.txt Data/2026/7_23/analysis/TMS_7_pipeline_data.txt Data/2026/7_24/analysis/TMS_5_pipeline_data.txt Data/2026/10_13/analysis/2026-10-13_tms-4_pipeline_data.txt
+python Calibration/tms_split_recording.py Data/2026/11_23/TMS_2.TXT Data/2026/11_23/TMS_3.TXT --prefix 2026-11-23_tms-2-3 --templates "Data/2026/4_2/analysis/26.04.03 data_pipeline_data.txt" "Data/2026/4_8/analysis/2026.04.08 data_pipeline_data.txt" "Data/2026/5_28/analysis/2026.05.28 data_pipeline_data.txt" "Data/2026/7_16/analysis/2026.07.16 data_pipeline_data.txt" Data/2026/7_23/analysis/2026-07-23_tms-7_pipeline_data.txt Data/2026/7_24/analysis/2026-07-24_tms-5_pipeline_data.txt Data/2026/10_13/analysis/2026-10-13_tms-4_pipeline_data.txt
 ```
