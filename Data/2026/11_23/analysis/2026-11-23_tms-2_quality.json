@@ -1,0 +1,61 @@
+{
+  "input_file": "TMS/Data/2026/11_23/TMS_2.TXT",
+  "input_sha256": "f09bb3697c9af0f7c748f43ee07ddb550009a55252e1710b9ef3638bb48afcae",
+  "pipeline_sha256": "abcc8ee25013fcdd722271efac2ef6caffd60f6388b8d8bb22db6068bd4b16c9",
+  "pipeline_revision": {
+    "code_commit": "0604925b9b6c30f5d4a5ac0b6d7a41720dd7f58e",
+    "working_tree_modified": false
+  },
+  "sampling_start_us": 696416664,
+  "power_on_us": 472444,
+  "sample_count": 4717,
+  "sampling_rate_hz": 320,
+  "nominal_last_sample_s": 14.7375,
+  "nominal_coverage_s": 14.740625,
+  "timing": "Uniform 320 Hz assumed, not verified; firmware targets 15 seconds and logs no per-sample timestamps.",
+  "calibration": {
+    "slope_kg_per_adc": -0.0391,
+    "intercept_kg": -193.0049,
+    "r_squared": 0.999948,
+    "same_day_calibration_supplied": false
+  },
+  "quality": {
+    "thrust_status": "provisional",
+    "event_detected": true,
+    "loadcell_clipped_samples": 0,
+    "pressure_status": "usable",
+    "pressure_clipped_samples": 0,
+    "pressure_unique_codes": 2542,
+    "baseline_raw_std_N": 0.583073939522557,
+    "event_gate_N": 5.830739395225571,
+    "event_gate_duration_s": 0.1,
+    "warnings": [
+      "Post-event baseline is at least half the absolute thrust threshold; burn end, average thrust, and impulse are provisional.",
+      "Last threshold crossing is at the end of the recording; burn duration is not validated."
+    ],
+    "tail_mean_N": 143.62516698374614,
+    "tail_std_N": 6.656926192178437,
+    "burn_end_censored": true
+  },
+  "thrust": {
+    "peak_thrust": 149.16857536799006,
+    "peak_time": 14.5125,
+    "peak_idx": 4644,
+    "ignition_idx": 4087,
+    "ignition_time": 12.771875,
+    "burnout_idx": 4716,
+    "burnout_time": 14.7375,
+    "burn_time": 1.965625000000001,
+    "ignition_delay": 12.771875,
+    "total_impulse": 210.6956049306418,
+    "avg_thrust": 107.19013287409433,
+    "specific_impulse": null,
+    "threshold_force": 5.0
+  },
+  "pressure": {
+    "peak_pressure": 23.28081858795398,
+    "peak_pressure_time": 13.56875
+  },
+  "baseline_offset_N": -60.1009613042806,
+  "baseline_sample_count": 2044
+}

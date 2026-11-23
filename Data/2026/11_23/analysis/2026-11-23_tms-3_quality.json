@@ -1,0 +1,54 @@
+{
+  "input_file": "TMS/Data/2026/11_23/TMS_3.TXT",
+  "input_sha256": "273e4b6c0866b2bf82153875bc0364ef8e42dd2b87614ca3af2282b7cda57226",
+  "pipeline_sha256": "abcc8ee25013fcdd722271efac2ef6caffd60f6388b8d8bb22db6068bd4b16c9",
+  "pipeline_revision": {
+    "code_commit": "0604925b9b6c30f5d4a5ac0b6d7a41720dd7f58e",
+    "working_tree_modified": false
+  },
+  "sampling_start_us": 711936200,
+  "power_on_us": 472444,
+  "sample_count": 4717,
+  "sampling_rate_hz": 320,
+  "nominal_last_sample_s": 14.7375,
+  "nominal_coverage_s": 14.740625,
+  "timing": "Uniform 320 Hz assumed, not verified; firmware targets 15 seconds and logs no per-sample timestamps.",
+  "calibration": {
+    "slope_kg_per_adc": -0.0391,
+    "intercept_kg": -193.0049,
+    "r_squared": 0.999948,
+    "same_day_calibration_supplied": false
+  },
+  "quality": {
+    "thrust_status": "no_event",
+    "event_detected": false,
+    "loadcell_clipped_samples": 0,
+    "pressure_status": "usable",
+    "pressure_clipped_samples": 0,
+    "pressure_unique_codes": 663,
+    "baseline_raw_std_N": 24.980943975277146,
+    "event_gate_N": 249.80943975277145,
+    "event_gate_duration_s": 0.1,
+    "warnings": [
+      "No sustained thrust event; noise is not published as a combustion test."
+    ]
+  },
+  "thrust": {
+    "peak_thrust": null,
+    "peak_time": null,
+    "ignition_time": null,
+    "burnout_time": null,
+    "burn_time": null,
+    "ignition_delay": null,
+    "total_impulse": null,
+    "avg_thrust": null,
+    "threshold_force": null,
+    "specific_impulse": null
+  },
+  "pressure": {
+    "peak_pressure": 2.3679291060621317,
+    "peak_pressure_time": 11.028125
+  },
+  "baseline_offset_N": 11.966031425906468,
+  "baseline_sample_count": 160
+}

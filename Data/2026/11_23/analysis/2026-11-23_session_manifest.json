@@ -1,0 +1,99 @@
+{
+  "test_date": "2026-11-23",
+  "date_source": "User identified November 23, 2026; raw headers contain device uptime.",
+  "summary": "One firing split across TMS_2 and TMS_3 by the fixed 15 s recording window after a long ignition delay. 0.782036 s between the files is unsampled and is filled by fitting earlier firings' thrust curves.",
+  "pipeline": {
+    "repository": "https://github.com/postech-psi/TMS",
+    "path": "Calibration/tms_data_pipeline.py",
+    "sha256": "abcc8ee25013fcdd722271efac2ef6caffd60f6388b8d8bb22db6068bd4b16c9",
+    "code_commit": "0604925b9b6c30f5d4a5ac0b6d7a41720dd7f58e",
+    "threshold": "fixed 5 N filtered force",
+    "python": "3.13.14",
+    "numpy": "2.4.4",
+    "scipy": "1.17.1",
+    "matplotlib": "3.10.8",
+    "processing_options": {
+      "dpi": 180,
+      "burnout_fit_window_s": null
+    }
+  },
+  "joint_analysis": {
+    "path": "Calibration/tms_split_recording.py",
+    "sha256": "9235e24595228b0d491948c3c441455cc12359c694e39eeb5598deadc5b850fc",
+    "code_commit": "0cc11df36316f97a9793488e5af05ca5ef0c80e5",
+    "templates": [
+      "Data/2026/4_2/analysis/26.04.03 data_pipeline_data.txt",
+      "Data/2026/4_8/analysis/2026.04.08 data_pipeline_data.txt",
+      "Data/2026/5_28/analysis/2026.05.28 data_pipeline_data.txt",
+      "Data/2026/7_16/analysis/2026.07.16 data_pipeline_data.txt",
+      "Data/2026/7_23/analysis/TMS_7_pipeline_data.txt",
+      "Data/2026/7_24/analysis/TMS_5_pipeline_data.txt",
+      "Data/2026/10_13/analysis/2026-10-13_tms-4_pipeline_data.txt"
+    ],
+    "accepted_templates": [
+      "Data/2026/4_2/analysis/26.04.03 data_pipeline_data.txt",
+      "Data/2026/4_8/analysis/2026.04.08 data_pipeline_data.txt",
+      "Data/2026/5_28/analysis/2026.05.28 data_pipeline_data.txt",
+      "Data/2026/10_13/analysis/2026-10-13_tms-4_pipeline_data.txt"
+    ],
+    "outputs": [
+      "2026-11-23_tms-2-3_joint.json",
+      "2026-11-23_tms-2-3_pipeline_data.txt",
+      "2026-11-23_tms-2-3_loadcell_plot.png",
+      "2026-11-23_tms-2-3_barometer_plot.png",
+      "2026-11-23_tms-2-3_combined_plot.png"
+    ]
+  },
+  "firmware_reference": {
+    "path": "TMS Unit/tms_code.ino",
+    "code_commit": "df341fed435b3a65cb50729d2a47ff76cc144789",
+    "recording_target_s": 15,
+    "flashed_version_verified": false
+  },
+  "recordings": [
+    {
+      "recording_number": 2,
+      "original_filename": "TMS_2.TXT",
+      "tms_path": "Data/2026/11_23/TMS_2.TXT",
+      "published_path": "tests/2026-11-23/files/2026-11-23_tms-2_raw.txt",
+      "sha256": "f09bb3697c9af0f7c748f43ee07ddb550009a55252e1710b9ef3638bb48afcae",
+      "bytes": 59415,
+      "sample_pairs": 4717,
+      "sampling_start_us": 696416664,
+      "power_on_us": 472444,
+      "role": "Ignition, rise and plateau; ends under load.",
+      "per_file_thrust_status": "provisional",
+      "per_file_pressure_status": "usable",
+      "per_file_outputs": [
+        "2026-11-23_tms-2_executive_report.txt",
+        "2026-11-23_tms-2_pipeline_data.txt",
+        "2026-11-23_tms-2_quality.json",
+        "2026-11-23_tms-2_loadcell_plot.png",
+        "2026-11-23_tms-2_barometer_plot.png",
+        "2026-11-23_tms-2_combined_plot.png"
+      ]
+    },
+    {
+      "recording_number": 3,
+      "original_filename": "TMS_3.TXT",
+      "tms_path": "Data/2026/11_23/TMS_3.TXT",
+      "published_path": "tests/2026-11-23/files/2026-11-23_tms-3_raw.txt",
+      "sha256": "273e4b6c0866b2bf82153875bc0364ef8e42dd2b87614ca3af2282b7cda57226",
+      "bytes": 61340,
+      "sample_pairs": 4717,
+      "sampling_start_us": 711936200,
+      "power_on_us": 472444,
+      "role": "Tail of the same burn; starts under load and decays to baseline.",
+      "per_file_thrust_status": "no_event",
+      "per_file_pressure_status": "usable",
+      "per_file_outputs": [
+        "2026-11-23_tms-3_executive_report.txt",
+        "2026-11-23_tms-3_pipeline_data.txt",
+        "2026-11-23_tms-3_quality.json",
+        "2026-11-23_tms-3_loadcell_plot.png",
+        "2026-11-23_tms-3_barometer_plot.png",
+        "2026-11-23_tms-3_combined_plot.png"
+      ]
+    }
+  ]
+}

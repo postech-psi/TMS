@@ -1,0 +1,225 @@
+{
+  "method": {
+    "script": "Calibration/tms_split_recording.py",
+    "script_sha256": "9235e24595228b0d491948c3c441455cc12359c694e39eeb5598deadc5b850fc",
+    "pipeline_sha256": "abcc8ee25013fcdd722271efac2ef6caffd60f6388b8d8bb22db6068bd4b16c9",
+    "pipeline_revision": {
+      "code_commit": "0604925b9b6c30f5d4a5ac0b6d7a41720dd7f58e",
+      "working_tree_modified": false
+    },
+    "threshold_n": 5.0,
+    "sampling_rate_hz_assumed": 320,
+    "alignment": "Second file placed at the difference of the sampling-start uptime headers; both files use 320 Hz local axes.",
+    "baseline": "First file's pre-event raw-force mean (pipeline horizontal offset), applied to both files.",
+    "filtering": "Each file filtered separately; the only values inside the unsampled interval are the stated gap estimate."
+  },
+  "recordings": [
+    {
+      "file": "TMS_2.TXT",
+      "sha256": "f09bb3697c9af0f7c748f43ee07ddb550009a55252e1710b9ef3638bb48afcae",
+      "bytes": 59415,
+      "sampling_start_us": 696416664,
+      "power_on_us": 472444,
+      "sample_pairs": 4717,
+      "loadcell_adc_first_quarter_second_median": -4780.0,
+      "loadcell_adc_last_quarter_second_median": -5167.0,
+      "filtered_force_first_n": -0.9076300670476667,
+      "filtered_force_last_n": 146.3041273320785,
+      "pressure_adc_first": 330.0,
+      "pressure_adc_last": 6801.0
+    },
+    {
+      "file": "TMS_3.TXT",
+      "sha256": "273e4b6c0866b2bf82153875bc0364ef8e42dd2b87614ca3af2282b7cda57226",
+      "bytes": 61340,
+      "sampling_start_us": 711936200,
+      "power_on_us": 472444,
+      "sample_pairs": 4717,
+      "loadcell_adc_first_quarter_second_median": -5026.0,
+      "loadcell_adc_last_quarter_second_median": -4778.0,
+      "filtered_force_first_n": 116.83954072407035,
+      "filtered_force_last_n": -0.5564376862259035,
+      "pressure_adc_first": 6667.0,
+      "pressure_adc_last": 7453.0
+    }
+  ],
+  "timing": {
+    "second_file_offset_s": 15.519536,
+    "first_file_last_sample_s": 14.7375,
+    "unsampled_interval_s": 0.7820359999999997,
+    "note": "If the real sample rate is below 320 Hz the files span more time and the true gap is shorter."
+  },
+  "baseline": {
+    "loadcell_offset_n": -60.1009613042806,
+    "baseline_window_end_s": 6.3875,
+    "return_to_baseline_n": -0.5577365481248767,
+    "return_to_baseline_std_n": 0.17972336631707367
+  },
+  "measured": {
+    "onset_s": 12.771875,
+    "first_file_ends_above_threshold": true,
+    "second_file_starts_above_threshold": true,
+    "end_s": 16.222661000000002,
+    "peak_n": 149.16857536799006,
+    "peak_s": 14.5125,
+    "boundary_force_n": {
+      "first_file_last": 146.3041273320785,
+      "second_file_first": 116.83954072407035
+    },
+    "impulse_first_file_n_s": 210.6956049306418,
+    "impulse_second_file_n_s": 40.224630339762044,
+    "impulse_measured_n_s": 250.92023527040385
+  },
+  "estimated": {
+    "gap_model": "historical_template_median",
+    "gap_impulse_n_s": 109.81369139583907,
+    "gap_impulse_template_range_n_s": [
+      105.51428646633676,
+      112.18435450998874
+    ],
+    "gap_max_n": 147.2412581730532,
+    "template_fit_window_before_gap_s": 1.0,
+    "template_acceptance_rmse_n": 6.0,
+    "templates": [
+      {
+        "template": "Data/2026/4_2/analysis/26.04.03 data_pipeline_data.txt",
+        "amplitude_n": 147.75482798347136,
+        "shift_s": 0.05762191767253534,
+        "stretch": 1.0943211576454677,
+        "rmse_n": 5.626064123800692,
+        "edge_correction_n": [
+          -0.6626103270226338,
+          9.256387355333715
+        ],
+        "gap_impulse_n_s": 109.81003449416619,
+        "gap_max_n": 149.28853760774976,
+        "accepted": true
+      },
+      {
+        "template": "Data/2026/4_8/analysis/2026.04.08 data_pipeline_data.txt",
+        "amplitude_n": 149.89432050805877,
+        "shift_s": 0.3740244274206205,
+        "stretch": 1.160660249565944,
+        "rmse_n": 3.4843809196833564,
+        "edge_correction_n": [
+          -3.0180477088942723,
+          8.610683955723601
+        ],
+        "gap_impulse_n_s": 112.18435450998874,
+        "gap_max_n": 152.17220168068906,
+        "accepted": true
+      },
+      {
+        "template": "Data/2026/5_28/analysis/2026.05.28 data_pipeline_data.txt",
+        "amplitude_n": 145.662731582256,
+        "shift_s": 0.11420828500938125,
+        "stretch": 1.1882690962907236,
+        "rmse_n": 5.629492079877136,
+        "edge_correction_n": [
+          0.979267983260371,
+          0.15518841180679033
+        ],
+        "gap_impulse_n_s": 110.20179811797145,
+        "gap_max_n": 146.52535685365203,
+        "accepted": true
+      },
+      {
+        "template": "Data/2026/7_16/analysis/2026.07.16 data_pipeline_data.txt",
+        "amplitude_n": 148.5375710673378,
+        "shift_s": 0.6472899900555071,
+        "stretch": 1.3843875388774607,
+        "rmse_n": 9.735894848860106,
+        "edge_correction_n": [
+          -1.7643420413012052,
+          21.19313573185059
+        ],
+        "gap_impulse_n_s": 107.20936835515916,
+        "gap_max_n": 148.30565966949132,
+        "accepted": false
+      },
+      {
+        "template": "Data/2026/7_23/analysis/TMS_7_pipeline_data.txt",
+        "amplitude_n": 143.701698657631,
+        "shift_s": -1.9999999999999998,
+        "stretch": 1.9839498083951717,
+        "rmse_n": 6.962939775575778,
+        "edge_correction_n": [
+          3.3429227827175225,
+          -4.16398016288548
+        ],
+        "gap_impulse_n_s": 107.865975527769,
+        "gap_max_n": 146.3041273320785,
+        "accepted": false
+      },
+      {
+        "template": "Data/2026/7_24/analysis/TMS_5_pipeline_data.txt",
+        "amplitude_n": 140.36147159154865,
+        "shift_s": -1.9999999999920408,
+        "stretch": 1.5546785831829784,
+        "rmse_n": 16.849305806993936,
+        "edge_correction_n": [
+          7.279900075334524,
+          -7.3869164509664245
+        ],
+        "gap_impulse_n_s": 104.88577286678552,
+        "gap_max_n": 146.35142937280114,
+        "accepted": false
+      },
+      {
+        "template": "Data/2026/10_13/analysis/2026-10-13_tms-4_pipeline_data.txt",
+        "amplitude_n": 148.79005437088196,
+        "shift_s": 0.598843258018411,
+        "stretch": 0.9944653422994023,
+        "rmse_n": 5.695391947454819,
+        "edge_correction_n": [
+          -0.021222042410755648,
+          12.514180442453053
+        ],
+        "gap_impulse_n_s": 105.51428646633676,
+        "gap_max_n": 146.74767785065202,
+        "accepted": true
+      }
+    ],
+    "knee_fit": {
+      "edge_fit_window_s": 0.1,
+      "edge_slope_first_file_end_n_per_s": -11.766344118165442,
+      "edge_slope_second_file_start_n_per_s": -189.39653542814204,
+      "knee_after_gap_start_s": 0.6679625884375789,
+      "gap_impulse_n_s": 109.57790639413292,
+      "gap_max_n": 146.3041273320785,
+      "total_impulse_n_s": 360.4981416645368
+    },
+    "straight_bridge_gap_impulse_n_s": 102.89391079597917,
+    "boundary_value_gap_impulse_range_n_s": [
+      91.37272706968905,
+      114.41509452226931
+    ],
+    "total_impulse_n_s": 360.73392666624295,
+    "total_impulse_range_n_s": [
+      356.43452173674063,
+      363.1045897803926
+    ],
+    "burn_duration_s": 3.4507860000000026,
+    "average_thrust_n": 104.53674225705178,
+    "assumption": "Earlier firings' peak-normalized thrust curves are fitted (amplitude, time shift, time stretch) to the force next to the gap and pinned to both gap edges; the median accepted fill is the central value and the spread across accepted templates is the range. The knee fit (first file's end trend continued until it meets the second file's initial decay) and a straight bridge are kept for comparison. Measured impulse alone is a lower bound for non-negative thrust."
+  },
+  "pressure": {
+    "status": "unverified_does_not_track_thrust",
+    "sensor_placement": "Chamber (user-confirmed). The 6.4 s offset step and post-burn level are treated as sensor drift.",
+    "method": "0.10 s running median on raw ADC, inherited conversion, then a PCHIP baseline through 0.5 s medians of thrust-free periods (zero gauge pressure assumed there) is subtracted.",
+    "anchor_count": 53,
+    "quiet_period_residual_std_bar": 0.5347507737767401,
+    "thrust_correlation_during_burn": 0.3367578590103854,
+    "minimum_correlation_for_use": 0.5,
+    "corrected_peak_bar": 10.169037451400369,
+    "corrected_peak_s": 13.353125,
+    "force_at_corrected_peak_n": 95.25976172803647,
+    "note": "After drift removal the in-burn signal peaks before thrust reaches its plateau and then falls while thrust is still rising; chamber pressure cannot do that. Values are retained for diagnosis, not as chamber pressure."
+  },
+  "figures": [
+    "2026-11-23_tms-2-3_loadcell_plot.png",
+    "2026-11-23_tms-2-3_barometer_plot.png",
+    "2026-11-23_tms-2-3_combined_plot.png"
+  ],
+  "series": "2026-11-23_tms-2-3_pipeline_data.txt"
+}
