@@ -11,6 +11,8 @@
 
 `7_23 data.TXT` is SD recording `TMS_7` (an earlier local analysis used that name; the raw bytes here are the only copy). It uses the inherited loadcell calibration (−0.0391 kg/ADC, −193.0049 kg, R² 0.999948).
 
+**Pressure is suspect.** The pressure channel starts with a 9.38 bar offset, peaks at 17.06 bar at 4.42 s while thrust is still rising, falls to about 10 bar while thrust holds at 140–144 N, and settles about 5 bar below its starting level after burnout. Thrust metrics are not affected.
+
 `calidata/` and `cali_weights.txt` are the calibration recordings taken this day. They are kept as raw records but not used: fitted with `Calibration/calibration.py` (`ODD_ONLY = True`, which reads the interleaved loadcell channel) they give R² 0.88, too poor to replace the inherited calibration.
 
 [Report](./analysis/2026-07-23_tms-7_executive_report.txt) · [TSV](./analysis/2026-07-23_tms-7_pipeline_data.txt) · [Quality](./analysis/2026-07-23_tms-7_quality.json) · [Combined](./analysis/2026-07-23_tms-7_combined_plot.png) · [Loadcell](./analysis/2026-07-23_tms-7_loadcell_plot.png) · [Pressure](./analysis/2026-07-23_tms-7_barometer_plot.png)
