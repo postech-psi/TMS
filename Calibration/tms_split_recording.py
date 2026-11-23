@@ -351,8 +351,69 @@ def analyze(first_path: Path, second_path: Path, output_dir: Path, prefix: str, 
         cells = ["nan" if not np.isfinite(values[i]) else fmt.format(values[i]) for _, values, fmt in columns]
         rows.append("\t".join(cells + [stitched["source"][i]]))
     (output_dir / result["series"]).write_text("\n".join(rows) + "\n", encoding="utf-8")
+    result["report"] = f"{prefix}_executive_report.txt"
+    write_report(output_dir / result["report"], result, a, b)
     (output_dir / f"{prefix}_joint.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     return result
+
+
+def write_report(path: Path, r: dict, a: dict, b: dict) -> None:
+    """Executive report in the pipeline's format, separating measured and fitted values."""
+    m, e, p, t, base = r["measured"], r["estimated"], r["pressure"], r["timing"], r["baseline"]
+    accepted = [x for x in e["templates"] if x["accepted"]]
+    with path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(f"{tms.REPORT_RULE}\nSTATIC FIRE REPORT - BURN SPLIT ACROSS TWO RECORDINGS\n{tms.REPORT_RULE}\n\n")
+        f.write(f"Input files: {tms.format_project_relative_path(a['path'])} + {tms.format_project_relative_path(b['path'])}\n")
+        f.write(f"Sampling rate: {tms.SAMPLING_RATE} sps\n\n")
+        tms.write_report_section(f, "DATA QUALITY", [
+            f"Thrust status: measured with a fitted unsampled interval ({e['gap_model']})",
+            f"Pressure status: {p['status']}",
+            "Time axis assumes uniform 320 Hz sampling; no per-sample timestamps are logged.",
+            f"Second file aligned by sampling-start headers: offset {t['second_file_offset_s']:.6f} s.",
+            f"Unsampled interval: {t['first_file_last_sample_s']:.6f} to {t['second_file_offset_s']:.6f} s ({t['unsampled_interval_s']:.6f} s).",
+            "Ignition delay is time from the first recording's start, not an independently logged fire command.",
+            "Calibration is inherited from the existing pipeline; no same-day calibration was supplied.",
+        ])
+        tms.write_report_section(f, "THRUST METRICS", [
+            f"Ignition delay: {m['onset_s'] * 1000:.1f} ms",
+            f"Peak thrust (measured): {m['peak_n']:.2f} N at {m['peak_s']:.6f} s",
+            f"Total impulse (estimated): {e['total_impulse_n_s']:.2f} N s (range {e['total_impulse_range_n_s'][0]:.2f}-{e['total_impulse_range_n_s'][1]:.2f})",
+            f"  Measured: {m['impulse_measured_n_s']:.2f} N s (first file {m['impulse_first_file_n_s']:.2f}, second file {m['impulse_second_file_n_s']:.2f})",
+            f"  Fitted interval: {e['gap_impulse_n_s']:.2f} N s (range {e['gap_impulse_template_range_n_s'][0]:.2f}-{e['gap_impulse_template_range_n_s'][1]:.2f})",
+            f"Average thrust (estimated): {e['average_thrust_n']:.2f} N",
+            f"Burn duration: {e['burn_duration_s'] * 1000:.1f} ms ({m['onset_s']:.6f} to {m['end_s']:.6f} s)",
+        ])
+        tms.write_report_section(f, "UNSAMPLED INTERVAL FIT", [
+            f"Templates: earlier firings fitted to the last {e['template_fit_window_before_gap_s']:.1f} s before the gap and the measured decay; pinned to both edges.",
+            f"Edge force: {m['boundary_force_n']['first_file_last']:.2f} N / {m['boundary_force_n']['second_file_first']:.2f} N",
+            f"Accepted (RMS <= {e['template_acceptance_rmse_n']:.1f} N): " + ", ".join(
+                f"{Path(x['template']).parts[2]} ({x['rmse_n']:.2f} N)" for x in accepted),
+            "Rejected: " + ", ".join(
+                f"{Path(x['template']).parts[2]} ({x['rmse_n']:.2f} N)" for x in e["templates"] if not x["accepted"]),
+            f"Knee-fit cross-check total: {e['knee_fit']['total_impulse_n_s']:.2f} N s; straight-bridge gap impulse: {e['straight_bridge_gap_impulse_n_s']:.2f} N s",
+            "Measured impulse alone is a lower bound for non-negative thrust.",
+        ])
+        tms.write_report_section(f, "PRESSURE METRICS", [
+            f"Drift-corrected peak: {p['corrected_peak_bar']:.3f} bar at {p['corrected_peak_s']:.6f} s (thrust {p['force_at_corrected_peak_n']:.1f} N)",
+            f"Correlation with thrust during burn: r = {p['thrust_correlation_during_burn']:.2f} (minimum for use {p['minimum_correlation_for_use']:.2f})",
+            f"Thrust-free residual: {p['quiet_period_residual_std_bar']:.3f} bar RMS",
+            p["note"],
+        ])
+        tms.write_report_section(f, "CALIBRATION", [
+            f"Loadcell calibration slope: {tms.CALIBRATION_SLOPE:.6f} kg/ADC",
+            f"Loadcell calibration intercept: {tms.CALIBRATION_INTERCEPT:.4f} kg",
+            f"Loadcell calibration R^2: {tms.CALIBRATION_R_SQUARED:.6f}",
+            f"Pressure conversion: y = {tms.PRESSURE_SLOPE}x {tms.PRESSURE_INTERCEPT}",
+        ])
+        tms.write_report_section(f, "DATA PROCESSING", [
+            f"Loadcell threshold (fixed absolute): {r['method']['threshold_n']:.2f} N",
+            f"Loadcell baseline offset: {base['loadcell_offset_n']:.6f} N (first file, up to {base['baseline_window_end_s']:.6f} s), applied to both files",
+            f"Return to baseline in second file: {base['return_to_baseline_n']:.3f} +/- {base['return_to_baseline_std_n']:.3f} N",
+            f"Loadcell filter: Butterworth low-pass {tms.LOADCELL_LOWPASS_CUTOFF_HZ:.1f} Hz, order {tms.LOADCELL_LOWPASS_ORDER}; each file separately",
+            "Pressure: " + p["method"],
+            "filtered_force_N is measured only (nan in the gap); analysis_force_N includes the fitted interval.",
+        ])
+        f.write(f"{tms.REPORT_RULE}\n")
 
 
 def clean_pressure(time: np.ndarray, adc: np.ndarray, onset: float, end: float, fs: int) -> dict:
