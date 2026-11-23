@@ -861,7 +861,12 @@ def plot_quality_diagnostics(time, corrected, filtered, pressure_adc, quality, m
             if quality["event_detected"]:
                 ax.axvline(metrics["ignition_time"], color=IGNITION_MARK_COLOR, linestyle=":", label=f"{THRUST_EVENT_THRESHOLD_N:.1f} N onset")
                 ax.axhline(metrics["threshold_force"], color=THRESHOLD_COLOR, linestyle="--", label=f"{THRUST_EVENT_THRESHOLD_N:.1f} N threshold")
-            if kind == "combined":
+            if kind == "combined" and quality["pressure_status"] == "usable":
+                ax_p = ax.twinx()
+                ax_p.plot(time, pressure_adc, color=PRESSURE_FILTERED_COLOR, linewidth=1.0, alpha=.8, label="Recorded pressure ADC")
+                ax_p.set_ylabel("Pressure ADC (counts)", color=PRESSURE_FILTERED_COLOR)
+                ax_p.legend(loc="lower right")
+            elif kind == "combined":
                 ax.text(.02, .96, "Pressure unavailable: raw ADC clipped/stuck", transform=ax.transAxes, va="top", color=PRESSURE_FILTERED_COLOR)
         title = {"loadcell": "Loadcell Graph", "barometer": "Barometer Graph", "combined": "Loadcell + Barometer Graph"}[kind]
         ax.set_title(f"{title} - {INPUT_FILENAME}")
