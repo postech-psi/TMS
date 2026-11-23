@@ -310,6 +310,11 @@ def analyze(first_path: Path, second_path: Path, output_dir: Path, prefix: str, 
     p_raw_bar = tms.convert_to_pressure(adc_ab)
     stitched = {
         "time": np.concatenate((t_a, t_fill, t_b)),
+        "raw_force": np.concatenate((raw_a, nan_fill, raw_b)),
+        "drift_model": np.concatenate((np.full(n_a, offset_n), nan_fill, np.full(t_b.size, offset_n))),
+        "measured_filtered": np.concatenate((f_a, nan_fill, f_b)),
+        "loadcell_adc": np.concatenate((a["loadcell_adc"], nan_fill, b["loadcell_adc"])),
+        "pressure_adc": np.concatenate((a["pressure_adc"], nan_fill, b["pressure_adc"])),
         "source": [a["path"].name] * n_a + ["gap_fit"] * t_fill.size + [b["path"].name] * t_b.size,
         "corrected": np.concatenate((raw_a - offset_n, nan_fill, raw_b - offset_n)),
         "filtered": np.concatenate((f_a, gap_center[1:-1], f_b)),
@@ -322,14 +327,29 @@ def analyze(first_path: Path, second_path: Path, output_dir: Path, prefix: str, 
     figures = standard_plots(stitched, a, b, t_a, t_b, gap_x, gap_center, gap_lo, gap_hi, len(accepted), result,
                              onset_idx, n_a + t_fill.size + last_b, output_dir, prefix, dpi)
     result["figures"] = figures
-    result["series"] = f"{prefix}_joint_data.txt"
-    header = ["time_s", "source", "corrected_force_N", "filtered_or_fitted_force_N", "gap_fit_low_N", "gap_fit_high_N",
-              "raw_pressure_bar", "pressure_drift_baseline_bar", "drift_corrected_pressure_bar"]
-    rows = ["\t".join(header)]
-    for i, x in enumerate(stitched["time"]):
-        values = [stitched[k][i] for k in ("corrected", "filtered", "gap_low", "gap_high",
-                                           "pressure_raw", "pressure_baseline", "pressure_corrected")]
-        rows.append("\t".join([f"{x:.6f}", stitched["source"][i]] + ["nan" if not np.isfinite(v) else f"{v:.6f}" for v in values]))
+    result["series"] = f"{prefix}_pipeline_data.txt"
+    # Pipeline TSV layout: filtered_force_N stays measured-only (nan in the gap);
+    # analysis_force_N carries the measured force plus the fitted gap.
+    raw_gauge = stitched["pressure_raw"] - stitched["pressure_baseline"]
+    columns = [
+        ("time_s", stitched["time"], "{:.6f}"),
+        ("raw_force_N", stitched["raw_force"], "{:.6f}"),
+        ("drift_model_N", stitched["drift_model"], "{:.6f}"),
+        ("corrected_force_N", stitched["corrected"], "{:.6f}"),
+        ("filtered_force_N", stitched["measured_filtered"], "{:.6f}"),
+        ("raw_gauge_pressure", raw_gauge, "{:.6f}"),
+        ("filtered_gauge_pressure", stitched["pressure_corrected"], "{:.6f}"),
+        ("loadcell_adc", stitched["loadcell_adc"], "{:.0f}"),
+        ("pressure_adc", stitched["pressure_adc"], "{:.0f}"),
+        ("analysis_force_N", stitched["filtered"], "{:.6f}"),
+        ("gap_fit_low_N", stitched["gap_low"], "{:.6f}"),
+        ("gap_fit_high_N", stitched["gap_high"], "{:.6f}"),
+        ("pressure_drift_baseline_bar", stitched["pressure_baseline"], "{:.6f}"),
+    ]
+    rows = ["\t".join([name for name, _, _ in columns] + ["source"])]
+    for i in range(stitched["time"].size):
+        cells = ["nan" if not np.isfinite(values[i]) else fmt.format(values[i]) for _, values, fmt in columns]
+        rows.append("\t".join(cells + [stitched["source"][i]]))
     (output_dir / result["series"]).write_text("\n".join(rows) + "\n", encoding="utf-8")
     (output_dir / f"{prefix}_joint.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     return result
