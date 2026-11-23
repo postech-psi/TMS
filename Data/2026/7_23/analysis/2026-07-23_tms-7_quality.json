@@ -1,0 +1,58 @@
+{
+  "input_file": "TMS/Data/2026/7_23/7_23 data.TXT",
+  "input_sha256": "fdd4bb0d7785d4c3ab3c04bf4fd48102f0f57344141423122cc9c5b8abad650b",
+  "pipeline_sha256": "abcc8ee25013fcdd722271efac2ef6caffd60f6388b8d8bb22db6068bd4b16c9",
+  "pipeline_revision": {
+    "code_commit": "0604925b9b6c30f5d4a5ac0b6d7a41720dd7f58e",
+    "working_tree_modified": false
+  },
+  "sampling_start_us": 155232456,
+  "power_on_us": 491700,
+  "sample_count": 4716,
+  "sampling_rate_hz": 320,
+  "nominal_last_sample_s": 14.734375,
+  "nominal_coverage_s": 14.7375,
+  "timing": "Uniform 320 Hz assumed, not verified; firmware targets 15 seconds and logs no per-sample timestamps.",
+  "calibration": {
+    "slope_kg_per_adc": -0.0391,
+    "intercept_kg": -193.0049,
+    "r_squared": 0.999948,
+    "same_day_calibration_supplied": false
+  },
+  "quality": {
+    "thrust_status": "event_detected",
+    "event_detected": true,
+    "loadcell_clipped_samples": 0,
+    "pressure_status": "usable",
+    "pressure_clipped_samples": 0,
+    "pressure_unique_codes": 1339,
+    "baseline_raw_std_N": 0.5119711753461753,
+    "event_gate_N": 5.119711753461753,
+    "event_gate_duration_s": 0.1,
+    "warnings": [],
+    "tail_mean_N": 1.302582117171379,
+    "tail_std_N": 0.14034245831774894,
+    "burn_end_censored": false
+  },
+  "thrust": {
+    "peak_thrust": 143.98356784560983,
+    "peak_time": 5.609375,
+    "peak_idx": 1795,
+    "ignition_idx": 1217,
+    "ignition_time": 3.803125,
+    "burnout_idx": 2089,
+    "burnout_time": 6.528125,
+    "burn_time": 2.725,
+    "ignition_delay": 3.803125,
+    "total_impulse": 319.90981634182555,
+    "avg_thrust": 117.39809774011947,
+    "specific_impulse": null,
+    "threshold_force": 5.0
+  },
+  "pressure": {
+    "peak_pressure": 17.06057901156241,
+    "peak_pressure_time": 4.415625
+  },
+  "baseline_offset_N": -21.08321844591263,
+  "baseline_sample_count": 608
+}

@@ -7,9 +7,13 @@ from sklearn.linear_model import LinearRegression
 import os
 from pathlib import Path
 
-# 년도와 날짜를 이름으로 폴더 만들고 그 안에 calidata 폴더와 cali_weights.txt 파일 넣어주기 
+# 년도와 날짜를 이름으로 폴더 만들고 그 안에 calidata 폴더와 cali_weights.txt 파일 넣어주기
 YEAR = "2026"
-DATE_FOLDER = "4_2"
+DATE_FOLDER = "7_23"
+
+# ON이면 각 파일의 첫 2개 값을 무시하고, 그 다음부터 홀수 번째 값만 사용 (로드셀-기압계 인터리브 데이터용)
+# OFF면 기존처럼 파일의 모든 행을 로드셀 데이터로 사용
+ODD_ONLY = True
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 data_dir = PROJECT_ROOT / "Data" / YEAR / DATE_FOLDER / "calidata"
@@ -33,6 +37,8 @@ for filename in data_files:
         lines = file.readlines()
         try:
             numbers = [float(line.strip()) for line in lines if line.strip() != '']
+            if ODD_ONLY:
+                numbers = numbers[2:][::2]
             if len(numbers) == 0:
                 print(f"빈 파일: {filename}")
                 continue

@@ -1,0 +1,3 @@
+# Preserve the original logger bytes (CRLF) so recorded SHA-256 hashes stay valid across checkouts.
+/*.TXT -text whitespace=cr-at-eol
+/calidata/*.TXT -text whitespace=cr-at-eol

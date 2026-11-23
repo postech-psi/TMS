@@ -1,0 +1,56 @@
+========================================================================
+STATIC FIRE REPORT
+========================================================================
+
+Input file: TMS/Data/2026/7_23/7_23 data.TXT
+Sampling rate: 320 sps
+
+------------------------------------------------------------------------
+DATA QUALITY
+------------------------------------------------------------------------
+Thrust status: event_detected
+Pressure status: usable
+Time axis assumes uniform 320 Hz sampling; no per-sample timestamps are logged.
+Ignition delay is time from recording start, not an independently logged fire command.
+Calibration is inherited from the existing pipeline; no same-day calibration was supplied.
+
+------------------------------------------------------------------------
+THRUST METRICS
+------------------------------------------------------------------------
+Ignition delay: 3803.1 ms
+Peak thrust: 143.98 N
+Total impulse: 319.91 N s
+Average thrust: 117.40 N
+Burn duration: 2725.0 ms
+
+------------------------------------------------------------------------
+PRESSURE METRICS
+------------------------------------------------------------------------
+Peak pressure: 17.061 bar at 4.416 s
+
+------------------------------------------------------------------------
+CALIBRATION
+------------------------------------------------------------------------
+Loadcell calibration slope: -0.039100 kg/ADC
+Loadcell calibration intercept: -193.0049 kg
+Loadcell calibration R^2: 0.999948
+Pressure conversion: y = 0.0027x -0.11
+
+------------------------------------------------------------------------
+DATA PROCESSING
+------------------------------------------------------------------------
+Drift correction: Constant baseline offset
+Thrust metrics are calculated from filtered corrected force.
+Pressure metrics are calculated from filtered gauge pressure.
+Loadcell threshold (fixed absolute): 5.00 N
+Loadcell filter: Butterworth low-pass 20.0 Hz, order 2
+Pressure filter: Butterworth low-pass 5.0 Hz, order 4
+Pressure baseline offset: 9.380857 bar
+Pressure baseline window: first 0.500 s (up to 160 samples, filtered pressure)
+Loadcell offset is measured from pre-event raw force and subtracted before filtering.
+Pressure validity is checked before any offset subtraction; invalid channels remain unavailable.
+Loadcell baseline offset: -21.083218 N
+Loadcell baseline window end: 1.900000 s (608 samples)
+Ignition start time: 3.803125 s
+
+========================================================================
