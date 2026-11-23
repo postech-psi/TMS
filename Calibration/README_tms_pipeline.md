@@ -48,3 +48,17 @@ Least squares supplies a descending slope, intercept, and R². A fit must follow
 `filtered_force_N`, corrected force, ADC values, and all raw bytes remain measured data. An additional `analysis_force_N` column replaces the tail beginning at the fit end with the fitted line, clipped at zero. Impulse integrates this analysis curve from the original onset to the exact fractional-sample threshold endpoint, and average thrust uses the same interval. The original last-crossing end and impulse remain in the quality JSON for traceability. Plots retain the measured tail and show the extrapolation separately.
 
 No fitting window means the original threshold method is unchanged. Fit settings and results are in `thrust.tail_extrapolation` in the machine-readable output. These are estimated burnout results; the method does not establish the physical cause of the measured tail or recover missing logger timestamps.
+
+## Burn split across two recordings
+
+The firmware writes fixed 15-second files. A long ignition delay can push the burn across a file boundary, leaving an unsampled interval between the files. `tms_split_recording.py` analyzes such a pair as one firing:
+
+```sh
+python Calibration/tms_split_recording.py Data/2026/11_23/TMS_2.TXT Data/2026/11_23/TMS_3.TXT --prefix 2026-11-23_tms-2-3 --templates Data/2026/4_2/analysis/*pipeline_data.txt Data/2026/4_8/analysis/*pipeline_data.txt Data/2026/5_28/analysis/*pipeline_data.txt Data/2026/7_16/analysis/*pipeline_data.txt Data/2026/7_23/analysis/TMS_7_pipeline_data.txt Data/2026/7_24/analysis/*pipeline_data.txt Data/2026/10_13/analysis/2026-10-13_tms-4_pipeline_data.txt
+```
+
+- The second file is placed using the difference of the two sampling-start headers (same power cycle required). The first file's pre-event loadcell baseline is applied to both files, and each file is filtered separately.
+- Earlier firings' peak-normalized thrust curves (`--templates`) are fitted to the force next to the gap: the last 1 s of the first file plus the measured decay. Amplitude, time shift and time stretch are free. Each fill is pinned to both edge values. Templates with RMS error ≤ 6 N are accepted; their median is the gap estimate and their spread is the range. A knee fit (end trend continued into the back-projected decay) and a straight bridge are kept for comparison.
+- Measured and fitted impulse are reported separately. Measured impulse alone is a lower bound.
+- A drifting chamber-pressure channel is despiked (0.1 s running median) and a smooth baseline through thrust-free periods is subtracted. If the result correlates with thrust below r = 0.5 during the burn, it is labelled unverified and kept out of performance metrics.
+- Figures use the pipeline's standard loadcell, barometer and combined plots with the unsampled interval hatched and the fitted portion dashed.
