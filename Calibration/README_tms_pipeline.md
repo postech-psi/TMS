@@ -25,11 +25,11 @@ The time axis remains `arange(n)/320`, as in previous analyses. The firmware tar
 
 Inherited conversion: `(−193.0049 − 0.0391 * adc) * 9.80665` N; pressure `0.0027 * adc − 0.11` bar. No new calibration is inferred from this session. The historical R² belongs to that calibration, not the new test.
 
-Thrust uses a constant pre-event baseline and a zero-phase Butterworth filter (20 Hz, order 2). Pressure uses 5 Hz, order 4, and the first 0.5 seconds as baseline. First/last crossings of 3% peak define the legacy event window. Time to onset is from recording start, not independently measured ignition-command latency.
+Thrust uses a constant pre-event baseline and a zero-phase Butterworth filter (20 Hz, order 2). Pressure uses 5 Hz, order 4, and the first 0.5 seconds as baseline. First/last crossings of a fixed 5 N filtered-force threshold (`THRUST_EVENT_THRESHOLD_N`) define the event window. Outputs before 2026-11-23 used 3% of peak and keep that label in their reports. Time to onset is from recording start, not independently measured ignition-command latency.
 
 Before calculating performance, a conservative event gate requires force above `max(5 N, 10 * initial raw standard deviation)` for 0.1 seconds. Recordings without an event receive no performance metrics. Pressure is checked on raw ADC values before baseline subtraction: clipped or constant channels receive unavailable (`nan` in TSV, `null` in JSON) pressure, never zero bar.
 
-A final one-second offset at least half the 3% threshold makes thrust metrics provisional. A last crossing at the final sample marks burn end censored. The historical algorithm's numeric output is preserved for diagnosis; it is not validated motor performance. Plots show the full recording when channels fail.
+A final one-second offset at least half the 5 N threshold makes thrust metrics provisional. A last crossing at the final sample marks burn end censored. The historical algorithm's numeric output is preserved for diagnosis; it is not validated motor performance. Plots show the full recording when channels fail.
 
 ## Outputs and organization
 
@@ -43,8 +43,8 @@ For the October session, TMS_4 alone has a clear thrust event; TMS_2 and TMS_5 a
 
 For an anomalous tail, `--burnout-fit-window START_S END_S` fits the measured filtered decay before that tail. The October TMS_4 processing uses 9.65–9.85 s. This is an explicit per-record processing choice, not an automatic rule for every firing.
 
-Least squares supplies a descending slope, intercept, and R². A fit must follow the force peak, contain at least 10 samples, have R² ≥ 0.95, and cross 3% peak after the selected window but reach zero within the recording. The published end retains the existing 3% definition; the zero crossing is also recorded.
+Least squares supplies a descending slope, intercept, and R². A fit must follow the force peak, contain at least 10 samples, have R² ≥ 0.95, and cross the 5 N threshold after the selected window but reach zero within the recording. The published end uses the 5 N threshold; the zero crossing is also recorded. The October TMS_4 outputs were produced with the earlier 3% definition.
 
-`filtered_force_N`, corrected force, ADC values, and all raw bytes remain measured data. An additional `analysis_force_N` column replaces the tail beginning at the fit end with the fitted line, clipped at zero. Impulse integrates this analysis curve from the original onset to the exact fractional-sample 3% endpoint, and average thrust uses the same interval. The original last-crossing end and impulse remain in the quality JSON for traceability. Plots retain the measured tail and show the extrapolation separately.
+`filtered_force_N`, corrected force, ADC values, and all raw bytes remain measured data. An additional `analysis_force_N` column replaces the tail beginning at the fit end with the fitted line, clipped at zero. Impulse integrates this analysis curve from the original onset to the exact fractional-sample threshold endpoint, and average thrust uses the same interval. The original last-crossing end and impulse remain in the quality JSON for traceability. Plots retain the measured tail and show the extrapolation separately.
 
 No fitting window means the original threshold method is unchanged. Fit settings and results are in `thrust.tail_extrapolation` in the machine-readable output. These are estimated burnout results; the method does not establish the physical cause of the measured tail or recover missing logger timestamps.

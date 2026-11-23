@@ -41,9 +41,8 @@ PRESSURE_LABEL = "Gauge Pressure [bar]"
 
 # Analysis
 PROPELLANT_MASS = None
-THRUST_EVENT_THRESHOLD_RATIO = 0.03
+THRUST_EVENT_THRESHOLD_N = 5.0
 BURNOUT_FIT_WINDOW = None  # Opt-in (start_s, end_s); never inferred from a filename.
-THRESHOLD_PERCENT = int(THRUST_EVENT_THRESHOLD_RATIO * 100)
 
 # Outputs
 GENERATE_PLOTS = True
@@ -156,11 +155,10 @@ def zero_phase_lowpass(values: np.ndarray, cutoff_hz: float, order: int) -> np.n
     return filtfilt(b, a, values)
 
 
-def find_event_bounds(signal: np.ndarray, threshold_ratio: float) -> dict[str, float | int]:
+def find_event_bounds(signal: np.ndarray, threshold_value: float) -> dict[str, float | int]:
     """Find the first and last threshold crossings for a positive-going event."""
     peak_value = float(np.max(signal))
     peak_idx = int(np.argmax(signal))
-    threshold_value = threshold_ratio * peak_value
     above_threshold = signal >= threshold_value
 
     if np.any(above_threshold):
@@ -184,8 +182,7 @@ def calculate_horizontal_offset(raw_force: np.ndarray) -> dict[str, float]:
     filtered_force = zero_phase_lowpass(raw_force, LOADCELL_LOWPASS_CUTOFF_HZ, LOADCELL_LOWPASS_ORDER)
     seed_count = max(5, min(filtered_force.size, int(0.5 * SAMPLING_RATE)))
     baseline_seed = float(np.mean(filtered_force[:seed_count]))
-    peak_force = float(np.max(filtered_force))
-    trigger_force = baseline_seed + THRUST_EVENT_THRESHOLD_RATIO * (peak_force - baseline_seed)
+    trigger_force = baseline_seed + THRUST_EVENT_THRESHOLD_N
     ignition_candidates = np.where(filtered_force >= trigger_force)[0]
     ignition_idx = int(ignition_candidates[0]) if ignition_candidates.size else filtered_force.size - 1
     averaging_end_idx = max(1, ignition_idx // 2)
@@ -243,7 +240,7 @@ def calculate_pressure_baseline(pressure_values: np.ndarray) -> float:
 
 # ===== METRICS =====
 def fit_burnout_tail(time: np.ndarray, force: np.ndarray, window: tuple[float, float]) -> dict:
-    """Fit a user-selected pre-anomaly decay; retain the existing 3% end definition."""
+    """Fit a user-selected pre-anomaly decay to the configured absolute threshold."""
     start, end = map(float, window)
     if not np.isfinite([start, end]).all() or start >= end:
         raise ValueError("Burnout fit window must contain two finite increasing times")
@@ -261,13 +258,13 @@ def fit_burnout_tail(time: np.ndarray, force: np.ndarray, window: tuple[float, f
     r_squared = 1.0 - float(np.sum((y - predicted) ** 2)) / total if total > 0 else 0.0
     if slope >= 0 or r_squared < 0.95:
         raise ValueError("Burnout fit must be a descending line with R^2 >= 0.95")
-    threshold = THRUST_EVENT_THRESHOLD_RATIO * float(np.max(force))
+    threshold = THRUST_EVENT_THRESHOLD_N
     threshold_time = float((threshold - intercept) / slope)
     zero_time = float(-intercept / slope)
     if threshold_time <= x[-1] or zero_time > time[-1]:
         raise ValueError("Extrapolated burnout must follow the fit window and lie inside the recording")
     return {
-        "method": "linear_extrapolation_to_3_percent",
+        "method": "linear_extrapolation_to_absolute_threshold",
         "requested_window_s": [start, end],
         "fit_start_s": float(x[0]), "fit_end_s": float(x[-1]), "sample_count": int(indices.size),
         "slope_N_per_s": float(slope), "intercept_N": float(intercept), "r_squared": r_squared,
@@ -301,7 +298,7 @@ def calculate_thrust_metrics(
 ) -> dict[str, object]:
     """Calculate thrust metrics from the filtered corrected force trace."""
     dt = time[1] - time[0] if len(time) > 1 else 1.0 / SAMPLING_RATE
-    event = find_event_bounds(filtered_force, THRUST_EVENT_THRESHOLD_RATIO)
+    event = find_event_bounds(filtered_force, THRUST_EVENT_THRESHOLD_N)
     peak_idx = int(event["peak_idx"])
     ignition_idx = int(event["start_idx"])
     burnout_idx = int(event["end_idx"])
@@ -425,16 +422,16 @@ def save_report(
         if quality and quality["thrust_status"] == "no_event":
             performance_lines = ["No sustained thrust event above the noise gate; performance metrics unavailable."]
         elif quality and quality["thrust_status"] == "provisional":
-            performance_lines.insert(0, "PROVISIONAL: baseline shift contaminates the 3% end threshold and integration window.")
+            performance_lines.insert(0, "PROVISIONAL: baseline shift contaminates the absolute end threshold and integration window.")
         write_report_section(file, "THRUST METRICS", performance_lines)
         if thrust_metrics.get("tail_extrapolation"):
             fit = thrust_metrics["tail_extrapolation"]
             write_report_section(file, "BURNOUT EXTRAPOLATION", [
                 f"Fit window: {fit['fit_start_s']:.6f} to {fit['fit_end_s']:.6f} s ({fit['sample_count']} samples)",
                 f"Decay slope: {fit['slope_N_per_s']:.6f} N/s; R^2: {fit['r_squared']:.6f}",
-                f"Estimated 3% burn end: {fit['threshold_crossing_s']:.6f} s",
+                f"Estimated {THRUST_EVENT_THRESHOLD_N:.1f} N burn end: {fit['threshold_crossing_s']:.6f} s",
                 f"Extrapolated zero crossing: {fit['zero_crossing_s']:.6f} s",
-                "Impulse integrates the measured curve before the fit end and the extrapolated tail up to the 3% crossing.",
+                "Impulse integrates the measured curve before the fit end and the extrapolated tail up to the configured absolute threshold crossing.",
                 "Original ADC and filtered force are retained; analysis_force_N contains the modeled tail.",
             ])
 
@@ -460,7 +457,7 @@ def save_report(
             f"Drift correction: {drift_result['label']}",
             "Thrust metrics are calculated from filtered corrected force.",
             "Pressure metrics are calculated from filtered gauge pressure.",
-            f"Loadcell threshold ({THRESHOLD_PERCENT} percent): {thrust_metrics['threshold_force']:.2f} N",
+            f"Loadcell threshold (fixed absolute): {thrust_metrics['threshold_force']:.2f} N",
             f"Loadcell filter: Butterworth low-pass {LOADCELL_LOWPASS_CUTOFF_HZ:.1f} Hz, order {LOADCELL_LOWPASS_ORDER}",
             f"Pressure filter: Butterworth low-pass {BAROMETER_LOWPASS_CUTOFF_HZ:.1f} Hz, order {BAROMETER_LOWPASS_ORDER}",
             f"Pressure baseline offset: {pressure_baseline:.6f} bar",
@@ -623,7 +620,7 @@ def plot_loadcell_summary(
         linestyle="--",
         linewidth=0.9,
         alpha=0.9,
-        label=f"{THRESHOLD_PERCENT}% threshold",
+        label=f"{THRUST_EVENT_THRESHOLD_N:.1f} N threshold",
     )
     ax.axvline(thrust_metrics["ignition_time"], color=IGNITION_MARK_COLOR, linestyle=":", linewidth=1.0, alpha=0.95)
     ax.axvline(thrust_metrics["burnout_time"], color=BURNOUT_MARK_COLOR, linestyle=":", linewidth=1.0, alpha=0.95)
@@ -862,8 +859,8 @@ def plot_quality_diagnostics(time, corrected, filtered, pressure_adc, quality, m
             ax.plot(time, filtered, color=FORCE_FILTERED_COLOR, linewidth=1.7, label="Filtered force")
             ax.set_ylabel("Force (N)")
             if quality["event_detected"]:
-                ax.axvline(metrics["ignition_time"], color=IGNITION_MARK_COLOR, linestyle=":", label="3% onset")
-                ax.axhline(metrics["threshold_force"], color=THRESHOLD_COLOR, linestyle="--", label="3% threshold")
+                ax.axvline(metrics["ignition_time"], color=IGNITION_MARK_COLOR, linestyle=":", label=f"{THRUST_EVENT_THRESHOLD_N:.1f} N onset")
+                ax.axhline(metrics["threshold_force"], color=THRESHOLD_COLOR, linestyle="--", label=f"{THRUST_EVENT_THRESHOLD_N:.1f} N threshold")
             if kind == "combined":
                 ax.text(.02, .96, "Pressure unavailable: raw ADC clipped/stuck", transform=ax.transAxes, va="top", color=PRESSURE_FILTERED_COLOR)
         title = {"loadcell": "Loadcell Graph", "barometer": "Barometer Graph", "combined": "Loadcell + Barometer Graph"}[kind]
@@ -913,9 +910,9 @@ def main() -> dict:
         quality["tail_mean_N"], quality["tail_std_N"] = float(np.mean(tail)), float(np.std(tail))
         if abs(quality["tail_mean_N"]) >= .5 * thrust_metrics["threshold_force"]:
             quality["thrust_status"] = "provisional"
-            quality["warnings"].append("Post-event baseline is at least half the 3% thrust threshold; burn end, average thrust, and impulse are provisional.")
+            quality["warnings"].append("Post-event baseline is at least half the absolute thrust threshold; burn end, average thrust, and impulse are provisional.")
         if thrust_metrics.get("tail_extrapolation"):
-            quality["burnout_method"] = "linear_extrapolation_to_3_percent"
+            quality["burnout_method"] = "linear_extrapolation_to_absolute_threshold"
             quality["measured_burn_end_censored"] = thrust_metrics["measured_threshold_burnout_time"] >= time[-1]
             quality["warnings"] = [w for w in quality["warnings"] if not w.startswith("Post-event baseline")]
             quality["warnings"].append("Burn end is estimated from the selected pre-tail decay; measured force is retained separately from the analysis curve.")
@@ -974,7 +971,7 @@ def cli() -> None:
     parser.add_argument("--no-show", action="store_true", help="Save figures without opening an interactive window")
     parser.add_argument("--no-plots", action="store_true")
     parser.add_argument("--dpi", type=int, default=PLOT_DPI)
-    parser.add_argument("--burnout-fit-window", nargs=2, type=float, metavar=("START_S", "END_S"), help="Opt-in decay fit before an anomalous tail; extrapolate to the existing 3%% end threshold")
+    parser.add_argument("--burnout-fit-window", nargs=2, type=float, metavar=("START_S", "END_S"), help="Opt-in decay fit before an anomalous tail; extrapolate to the configured absolute thrust threshold")
     args = parser.parse_args()
     if args.input:
         INPUT_FILE = args.input.resolve()

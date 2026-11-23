@@ -70,17 +70,20 @@ class RecordingTests(unittest.TestCase):
         force[time >= 3.8] = 20.
         original = force.copy()
         legacy = pipeline.calculate_thrust_metrics(time, force)
-        result = pipeline.calculate_thrust_metrics(time, force, burnout_fit_window=(3.3, 3.7))
         self.assertEqual(legacy['burnout_time'], time[-1])
-        self.assertAlmostEqual(result['burnout_time'], 3.97, places=10)
-        self.assertAlmostEqual(result['burn_time'], 1.97, places=10)
-        self.assertAlmostEqual(result['total_impulse'], 149.955, places=8)
-        self.assertAlmostEqual(result['avg_thrust'], 149.955 / 1.97, places=8)
-        self.assertAlmostEqual(result['tail_extrapolation']['zero_crossing_s'], 4., places=10)
-        np.testing.assert_array_equal(force, original)
-        analysis = pipeline.apply_burnout_tail(time, force, result['tail_extrapolation'])
-        np.testing.assert_array_equal(analysis[time < 3.7], original[time < 3.7])
-        self.assertTrue((analysis[time >= 4] == 0).all())
+        # Cover the upstream 3 N fixture and the retained local 5 N setting.
+        for threshold, end, impulse in [(3., 3.97, 149.955), (5., 3.95, 149.875)]:
+            with self.subTest(threshold=threshold), patch.object(pipeline, 'THRUST_EVENT_THRESHOLD_N', threshold):
+                result = pipeline.calculate_thrust_metrics(time, force, burnout_fit_window=(3.3, 3.7))
+                self.assertAlmostEqual(result['burnout_time'], end, places=10)
+                self.assertAlmostEqual(result['burn_time'], end - 2., places=10)
+                self.assertAlmostEqual(result['total_impulse'], impulse, places=8)
+                self.assertAlmostEqual(result['avg_thrust'], impulse / (end - 2.), places=8)
+                self.assertAlmostEqual(result['tail_extrapolation']['zero_crossing_s'], 4., places=10)
+                np.testing.assert_array_equal(force, original)
+                analysis = pipeline.apply_burnout_tail(time, force, result['tail_extrapolation'])
+                np.testing.assert_array_equal(analysis[time < 3.7], original[time < 3.7])
+                self.assertTrue((analysis[time >= 4] == 0).all())
 
     def test_flat_tail_cannot_be_used_as_a_decay_fit(self):
         time = np.arange(1600) / 320
